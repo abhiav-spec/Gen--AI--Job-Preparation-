@@ -2,7 +2,7 @@ import User from '../models/user.model.js';
 import Session from '../models/session.model.js';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
-import sendEmail from '../services/email.service.js';
+import sendEmail from '../services/email.services.js';
 import { generateOTP, getOtpHtml } from '../utils/otp.util.js';
 import Otp from '../models/otp.model.js';
 
