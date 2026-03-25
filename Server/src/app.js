@@ -3,6 +3,8 @@ import morgan from 'morgan';
 import authRoutes from './routes/auth.route.js';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
+import { generateInterviewReport } from './services/ai.service.js';
+const  interviewRouter = require('./routes/interview.routes.js');
 
 
 const app = express();
@@ -40,6 +42,34 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(morgan('dev'));
 app.use('/api/auth', authRoutes);
+app.use('/api/interview', interviewRouter);
+
+app.post('/api/generate-interview-report', async (req, res) => {
+    try {
+        const { resume, selfdescription, jobdescription } = req.body;
+        
+        if (!resume || !selfdescription || !jobdescription) {
+            return res.status(400).json({ 
+                error: 'Missing required fields: resume, selfdescription, jobdescription' 
+            });
+        }
+        
+        const report = await generateInterviewReport({
+            resume,
+            selfdescription,
+            jobdescription
+        });
+        
+        res.json({ success: true, data: report });
+    } catch (error) {
+        console.error('Error generating interview report:', error);
+        res.status(500).json({ 
+            error: 'Failed to generate interview report',
+            message: error.message 
+        });
+    }
+});
+
 app.get('/', (req, res) => {
     res.send('Welcome to the Authentication System API');
 });
