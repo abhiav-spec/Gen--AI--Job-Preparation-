@@ -24,7 +24,7 @@ const Login = () => {
       const { data } = await loginUser(formData);
       setUser(data.user);
       setAccessToken(data.accessToken);
-      navigate('/profile');
+      navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed. Please check credentials.');
     } finally {

@@ -1,11 +1,11 @@
-const jwt = require("jsonwebtoken")
-const sessionmodel = require("../models/session.model")
+import jwt from "jsonwebtoken";
+import sessionmodel from "../models/session.model.js";
 
 
 
 async function authUser(req, res, next) {
 
-    const Acess = req.cookies.token
+    const token = req.cookies.token;
 
     if (!token) {
         return res.status(401).json({
@@ -40,4 +40,4 @@ async function authUser(req, res, next) {
 }
 
 
-module.exports = { authUser }
+export { authUser };

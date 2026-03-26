@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 // --- Sub-schemas ---
 
@@ -93,4 +93,4 @@ const interviewReportSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Export the model
-module.exports = mongoose.model('InterviewReport', interviewReportSchema);
+export default mongoose.model('InterviewReport', interviewReportSchema);

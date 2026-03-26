@@ -8,6 +8,7 @@ import Register from '../pages/Register.jsx';
 import VerifyEmail from '../pages/VerifyEmail.jsx';
 import Profile from '../pages/Profile.jsx';
 import NotFound from '../pages/NotFound.jsx';
+import DashboardPage from '../pages/DashboardPage.jsx';
 
 import Loader from '../components/ui/Loader.jsx';
 
@@ -21,7 +22,7 @@ const ProtectedRoute = ({ children }) => {
 const PublicRoute = ({ children }) => {
   const { user, isLoading } = useAuth();
   if (isLoading) return <Loader />;
-  if (user) return <Navigate to="/profile" replace />;
+  if (user) return <Navigate to="/dashboard" replace />;
   return children;
 };
 
@@ -39,8 +40,11 @@ const AppRoutes = () => {
         {/* Protected Routes */}
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
 
+        {/* Dashboard Route */}
+        <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+
         {/* Redirect Root */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
         
         {/* Not Found */}
         <Route path="*" element={<NotFound />} />

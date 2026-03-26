@@ -68,7 +68,7 @@ const VerifyEmail = () => {
 
       setTimeout(() => {
         sessionStorage.removeItem('pending_verification_email');
-        navigate('/profile');
+        navigate('/dashboard');
       }, 1500);
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid OTP code.');

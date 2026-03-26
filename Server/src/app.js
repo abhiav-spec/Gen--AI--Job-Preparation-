@@ -4,7 +4,7 @@ import authRoutes from './routes/auth.route.js';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import { generateInterviewReport } from './services/ai.service.js';
-const  interviewRouter = require('./routes/interview.routes.js');
+import interviewRouter from './routes/interview.routes.js';
 
 
 const app = express();
