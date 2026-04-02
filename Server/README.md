@@ -5,7 +5,6 @@ This folder contains the backend API for the AI interview preparation platform.
 The server handles:
 - Authentication and session management
 - Email OTP verification
-- Resume upload (PDF)
 - AI-generated interview report creation
 - Report history and report download as PDF
 
@@ -23,7 +22,6 @@ From the backend perspective, users get these capabilities:
 - View one report
 - View all past reports
 - Download an interview report as PDF
-- DOwmload resume 
 
 ## Tech Stack
 
@@ -40,6 +38,40 @@ From the backend perspective, users get these capabilities:
 - Puppeteer for PDF generation
 
 ## Project Structure
+
+```text
+.
+|____server.js
+|____README.md
+|____package-lock.json
+|____package.json
+|____src
+| |____middleware
+| | |____file.middleware.js
+| | |____auth.middleware.js
+| |____config
+| | |____database.js
+| | |____config.js
+| |____utils
+| | |____otp.util.js
+| |____models
+| | |____otp.model.js
+| | |____interviewReport.model.js
+| | |____user.model.js
+| | |____session.model.js
+| |____controllers
+
+| | |____interview.controller.js
+| | |____auth.controller.js
+| |____routes
+| | |____interview.routes.js
+| |____app.js
+| |____services
+| | |____email.services.js
+| | |____ai.service.js
+```
+
+### Key Files:
 
 - `server.js`: Bootstraps database and HTTP server
 - `src/app.js`: Express app, middleware, CORS, root route, route mounting
@@ -58,6 +90,7 @@ From the backend perspective, users get these capabilities:
 - `src/services/email.services.js`: Email service
 - `src/services/ai.service.js`: AI report generation + PDF generation
 - `src/utils/otp.util.js`: OTP generator and email template helper
+
 
 ## Environment Variables
 

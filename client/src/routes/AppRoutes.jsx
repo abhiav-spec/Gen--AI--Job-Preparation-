@@ -9,6 +9,8 @@ import VerifyEmail from '../pages/VerifyEmail.jsx';
 import Profile from '../pages/Profile.jsx';
 import NotFound from '../pages/NotFound.jsx';
 import DashboardPage from '../pages/DashboardPage.jsx';
+import ReportGeneratorPage from '../pages/ReportGeneratorPage.jsx';
+import ReportDetailPage from '../pages/ReportDetailPage.jsx';
 
 import Loader from '../components/ui/Loader.jsx';
 
@@ -42,6 +44,8 @@ const AppRoutes = () => {
 
         {/* Dashboard Route */}
         <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+        <Route path="/dashboard/report-generator" element={<ProtectedRoute><ReportGeneratorPage /></ProtectedRoute>} />
+        <Route path="/dashboard/report/:reportId" element={<ProtectedRoute><ReportDetailPage /></ProtectedRoute>} />
 
         {/* Redirect Root */}
         <Route path="/" element={<Navigate to="/dashboard" replace />} />

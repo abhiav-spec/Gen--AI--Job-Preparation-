@@ -39,13 +39,13 @@ const skillGapSchema = new mongoose.Schema({
     },
     severity: {
         type: String,
-        enum: ['Low', 'Medium', 'High'],
+        enum: ['low', 'medium', 'high'],
         required: true
     }
 }, { _id: false });
 
 const preparationPlanSchema = new mongoose.Schema({
-    days: {
+    day: {
         type: Number,
         required: true
     },
@@ -75,7 +75,7 @@ const interviewReportSchema = new mongoose.Schema({
     matchScore: {
         type: Number,
         min: 0,
-        max: 10
+        max: 100
     },
     technicalQuestions: [technicalQuestionsSchema],
     behavioralQuestions: [behavioralQuestionsSchema],

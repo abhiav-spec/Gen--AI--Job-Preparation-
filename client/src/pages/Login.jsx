@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import AuthCard from '../components/ui/AuthCard';
+import AuthNavbar from '../components/ui/AuthNavbar'; // Add navbar
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import { loginUser, setAccessToken } from '../api/auth.api';
@@ -22,18 +23,25 @@ const Login = () => {
 
     try {
       const { data } = await loginUser(formData);
-      setUser(data.user);
-      setAccessToken(data.accessToken);
-      navigate('/dashboard');
+      if (data.user && data.user.accessToken) {
+        setAccessToken(data.user.accessToken);
+        setUser(data.user);
+        console.log('✅ Login successful, access token stored');
+        navigate('/dashboard');
+      } else {
+        setError('Login response missing access token');
+      }
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please check credentials.');
+      setError(err.response?.data?.error || err.response?.data?.message || 'Login failed. Please check credentials.');
+      console.error('Login error:', err);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="page-wrapper">
+    <div className="page-wrapper pt-24">
+      <AuthNavbar />
       <AuthCard 
         title="Welcome back" 
         subtitle="Please enter your details to sign in"

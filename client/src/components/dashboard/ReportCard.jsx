@@ -1,10 +1,32 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Download, ChevronRight, Share2 } from 'lucide-react';
+import { FileText, Download, ChevronRight, Share2, Activity } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { downloadInterviewReport } from '../../api/interview.api';
 
-const ReportCard = ({ role, score, resume, date, index }) => {
-  // Use intentional asymmetry and tonal shifts based on index
+const ReportCard = ({ role, score, date, reportId, index }) => {
+  const navigate = useNavigate();
+  const [downloading, setDownloading] = useState(false);
   const isEven = index % 2 === 0;
+
+  const handleDownload = async (e) => {
+    e.stopPropagation();
+    setDownloading(true);
+    try {
+      const res = await downloadInterviewReport(reportId);
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `interview_report_${reportId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error('Download failed:', error);
+    } finally {
+      setDownloading(false);
+    }
+  };
   
   return (
     <motion.div
@@ -29,11 +51,10 @@ const ReportCard = ({ role, score, resume, date, index }) => {
           </h3>
           <div className="flex items-center gap-3 text-sm text-[#94a3b8] font-inter">
             <span>{date}</span>
-            <span className="w-1 h-1 rounded-full bg-[rgba(255,255,255,0.2)]"></span>
-            <span className="truncate max-w-[150px]">{resume}</span>
           </div>
         </div>
       </div>
+
       
       {/* Middle section: Score Progress */}
       <div className="w-full md:w-1/4 flex flex-col items-center md:items-start px-4 mb-6 md:mb-0">
@@ -55,14 +76,21 @@ const ReportCard = ({ role, score, resume, date, index }) => {
       {/* Right section: Action Buttons */}
       <div className="w-full md:w-auto flex items-center justify-end gap-3">
         {/* Secondary Glass Button */}
-        <button className="flex items-center justify-center p-3 rounded-xl glass-surface-low border border-[rgba(255,255,255,0.1)] text-[#94a3b8] hover:text-[#5de6ff] hover:border-[rgba(93,230,255,0.3)] transition-all">
-          <Download size={18} />
+        <button 
+          onClick={handleDownload}
+          disabled={downloading}
+          className="flex items-center justify-center p-3 rounded-xl glass-surface-low border border-[rgba(255,255,255,0.1)] text-[#94a3b8] hover:text-[#5de6ff] hover:border-[rgba(93,230,255,0.3)] transition-all disabled:opacity-50"
+        >
+          {downloading ? <Activity size={18} className="animate-spin" /> : <Download size={18} />}
         </button>
         <button className="flex items-center justify-center p-3 rounded-xl glass-surface-low border border-[rgba(255,255,255,0.1)] text-[#94a3b8] hover:text-white hover:border-[rgba(255,255,255,0.3)] transition-all">
           <Share2 size={18} />
         </button>
         {/* Primary/Tertiary mix button */}
-        <button className="flex items-center gap-2 px-5 py-3 rounded-xl bg-[rgba(192,193,255,0.08)] border border-[rgba(192,193,255,0.2)] text-[#c0c1ff] font-inter font-semibold text-sm hover:bg-[rgba(192,193,255,0.15)] hover:text-white hover:border-[rgba(192,193,255,0.4)] transition-all group/btn">
+        <button 
+          onClick={() => navigate(`/dashboard/report/${reportId}`)}
+          className="flex items-center gap-2 px-5 py-3 rounded-xl bg-[rgba(192,193,255,0.08)] border border-[rgba(192,193,255,0.2)] text-[#c0c1ff] font-inter font-semibold text-sm hover:bg-[rgba(192,193,255,0.15)] hover:text-white hover:border-[rgba(192,193,255,0.4)] transition-all group/btn"
+        >
           Review Report
           <ChevronRight size={16} className="group-hover/btn:translate-x-1 transition-transform" />
         </button>

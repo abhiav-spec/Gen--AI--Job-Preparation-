@@ -8,12 +8,25 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Attach access token from memory on every request
+// Attach access token from memory + localStorage on every request
 let _accessToken = null;
 
-export const setAccessToken = (token) => { _accessToken = token; };
-export const getAccessToken = () => _accessToken;
-export const clearAccessToken = () => { _accessToken = null; };
+export const setAccessToken = (token) => {
+  _accessToken = token;
+  if (token) {
+    localStorage.setItem('accessToken', token);
+  }
+};
+
+export const getAccessToken = () => {
+  // Return from memory first, fallback to localStorage
+  return _accessToken || localStorage.getItem('accessToken');
+};
+
+export const clearAccessToken = () => {
+  _accessToken = null;
+  localStorage.removeItem('accessToken');
+};
 
 api.interceptors.request.use((config) => {
   if (_accessToken) {

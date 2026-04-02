@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/abhiav-spec/Gen--AI--Job-Preparation-#readme",
   "dependencies": {
+    "@google/genai": "^1.46.0",
     "@google/generative-ai": "^0.24.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",

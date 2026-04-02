@@ -6,8 +6,9 @@ const connectDB = async () => {
         await mongoose.connect(config.MONGODB_URI);
         console.log('MongoDB connected successfully');
     } catch (error) {
-        console.error('MongoDB connection error:', error);
-        process.exit(1);
+        console.error('MongoDB connection error (Neural bypass active):', error);
+        // Do not crash during development if Atlas is down or blocked
+        console.log('Server remaining active on port 3000 for UI diagnostics.');
     }
 };
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Mic, Activity, CheckCircle, Clock } from 'lucide-react';
+import { Mic, Activity, CheckCircle, Clock, FileText } from 'lucide-react';
 
 const CircularProgressIndicator = ({ percentage }) => {
   const radius = 64;

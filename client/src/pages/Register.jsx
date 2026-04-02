@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import AuthCard from '../components/ui/AuthCard';
+import AuthNavbar from '../components/ui/AuthNavbar';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import { registerUser } from '../api/auth.api';
@@ -31,7 +32,8 @@ const Register = () => {
   };
 
   return (
-    <div className="page-wrapper">
+    <div className="page-wrapper pt-24">
+      <AuthNavbar />
       <AuthCard 
         title="Create Account" 
         subtitle="Join our community of innovators"

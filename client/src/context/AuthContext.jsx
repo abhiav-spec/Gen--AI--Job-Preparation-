@@ -18,13 +18,17 @@ export const AuthProvider = ({ children }) => {
   const initializeAuth = useCallback(async () => {
     try {
       setIsLoading(true);
+      // Try to refresh session using refresh token cookie
       const res = await refreshAccessToken();
       const { accessToken, user } = res.data;
       
-      setAccessToken(accessToken);
-      setUser(user);
+      if (accessToken) {
+        setAccessToken(accessToken);
+        setUser(user);
+        console.log('✅ Session restored from refresh token');
+      }
     } catch (error) {
-      console.warn('Session expired or no previous session');
+      console.warn('⚠️ Session refresh failed - user needs to log in again', error.message);
       setUser(null);
       clearAccessToken();
     } finally {

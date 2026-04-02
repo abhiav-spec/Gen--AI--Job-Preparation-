@@ -6,30 +6,64 @@ import DashboardHeader from '../components/dashboard/DashboardHeader';
 import StatsCard from '../components/dashboard/StatsCard';
 import InterviewStartCard from '../components/dashboard/InterviewStartCard';
 import ReportCard from '../components/dashboard/ReportCard';
-import AIStatusPanel from '../components/dashboard/AIStatusPanel';
+import { useAuth } from '../context/AuthContext';
+import { getInterviewReports } from '../api/interview.api';
+import { useEffect, useState } from 'react';
 
 const DashboardPage = () => {
-  const statsData = [
-    { title: 'Interview Score', value: 'A+', icon: <Target size={24} />, delay: 0.1 },
-    { title: 'Total Reports', value: '14', icon: <Layers size={24} />, delay: 0.2 },
-    { title: 'Resume Status', value: 'V.4', icon: <FileJson size={24} />, delay: 0.3 },
-    { title: 'Last Session', value: '4.2h', icon: <Calendar size={24} />, delay: 0.4 }
-  ];
+  const { user } = useAuth();
+  const [reports, setReports] = useState([]);
+  const [filteredReports, setFilteredReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const reportData = [
-    { role: 'Senior Solutions Architect', score: 92, resume: 'arch_v4_final.pdf', date: 'Oct 14, 2026' },
-    { role: 'UX Design Lead', score: 78, resume: 'ux_portfolio_v2.pdf', date: 'Oct 11, 2026' },
-    { role: 'Data Science Specialist', score: 96, resume: 'ds_resume_alpha.pdf', date: 'Oct 05, 2026' },
-    { role: 'Mobile App Developer', score: 87, resume: 'ios_dev_resume.pdf', date: 'Sep 29, 2026' }
+  useEffect(() => {
+    const fetchReports = async () => {
+      if (!user?._id) return;
+      try {
+        const res = await getInterviewReports(user._id);
+        if (res.data.success) {
+          setReports(res.data.data);
+          setFilteredReports(res.data.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch reports:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchReports();
+  }, [user]);
+
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredReports(reports);
+    } else {
+      const query = searchQuery.toLowerCase();
+      const filtered = reports.filter(r => 
+        r.title?.toLowerCase().includes(query) || 
+        r.jobDescription?.toLowerCase().includes(query)
+      );
+      setFilteredReports(filtered);
+    }
+  }, [searchQuery, reports]);
+
+  const avgScore = reports.length > 0 
+    ? Math.round(reports.reduce((acc, r) => acc + r.matchScore, 0) / reports.length) 
+    : 0;
+
+  const statsData = [
+    { title: 'Interview Score', value: avgScore > 80 ? 'A+' : avgScore > 60 ? 'B' : 'C', icon: <Target size={24} />, delay: 0.1 },
+    { title: 'Total Reports', value: reports.length.toString(), icon: <Layers size={24} />, delay: 0.2 },
+    { title: 'Last Session', value: reports.length > 0 ? new Date(reports[0].createdAt).toLocaleDateString() : 'N/A', icon: <Calendar size={24} />, delay: 0.3 }
   ];
 
   return (
-    <div className="min-h-screen bg-[#121223] text-white flex overflow-hidden font-inter relative">
-      {/* Global Background Particles / Noise - Minimalist */}
-      <div className="absolute inset-0 pointer-events-none mix-blend-overlay opacity-20 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSIvPjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIi8+PC9zdmc+')]"></div>
+    <div className="min-h-screen text-white flex overflow-hidden font-inter relative z-10">
+      {/* Background is handled globally by ThreeBackground in App.jsx */}
 
       {/* Main Container */}
-      <div className="flex w-full h-screen overflow-hidden">
+      <div className="flex w-full min-h-screen">
         
         {/* Left Sidebar Fixed Width Container */}
         <div className="w-[300px] h-full relative hidden xl:block z-50">
@@ -37,10 +71,10 @@ const DashboardPage = () => {
         </div>
 
         {/* Main Content Area */}
-        <main className="flex-1 h-full overflow-y-auto overflow-x-hidden relative scroll-smooth px-6 xl:px-8 pb-12 z-10 custom-scrollbar">
+        <main className="flex-1 min-h-full relative scroll-smooth px-4 sm:px-6 xl:px-8 pb-12 z-10 overflow-x-hidden">
           
           <div className="max-w-[1200px] mx-auto w-full">
-            <DashboardHeader />
+            <DashboardHeader onSearch={(q) => setSearchQuery(q)} />
 
             {/* Asymmetric Header Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 mb-16">
@@ -50,7 +84,7 @@ const DashboardPage = () => {
               </div>
 
               {/* Right Stacked Cards - 5 Columns */}
-              <div className="lg:col-span-5 grid grid-cols-2 gap-4 auto-rows-fr">
+              <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-4 auto-rows-fr">
                 {statsData.map((stat, idx) => (
                   <StatsCard 
                     key={idx}
@@ -70,7 +104,7 @@ const DashboardPage = () => {
               transition={{ duration: 0.8, ease: "easeOut", delay: 0.5 }}
               className="mt-12"
             >
-              <div className="flex items-end justify-between mb-8">
+              <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-8 gap-6">
                 <div>
                   <span className="font-space text-[10px] uppercase font-bold text-[#5de6ff] tracking-[0.2em] mb-2 block animate-pulse">
                     The Archive
@@ -83,30 +117,41 @@ const DashboardPage = () => {
                   </p>
                 </div>
 
-                <div className="hidden md:flex gap-4">
-                   <div className="glass-surface-low rounded-[1.2rem] px-5 py-3 border border-[rgba(255,255,255,0.05)]">
+                 <div className="flex gap-4 w-full sm:w-auto overflow-x-auto pb-2 no-scrollbar">
+                   <div className="glass-surface-low rounded-[1.2rem] px-5 py-3 border border-[rgba(255,255,255,0.05)] min-w-max">
                       <span className="text-[#94a3b8] text-xs uppercase tracking-wider font-semibold mr-3">Simulations</span>
-                      <span className="font-space font-bold text-xl text-white">42</span>
+                      <span className="font-space font-bold text-xl text-white">{reports.length}</span>
                    </div>
-                   <div className="glass-surface-low rounded-[1.2rem] px-5 py-3 border border-[rgba(255,255,255,0.05)]">
+                   <div className="glass-surface-low rounded-[1.2rem] px-5 py-3 border border-[rgba(255,255,255,0.05)] min-w-max">
                       <span className="text-[#c0c1ff] text-xs uppercase tracking-wider font-semibold mr-3">Avg Score</span>
-                      <span className="font-space font-bold text-xl text-[#5de6ff] ai-glow-text">88%</span>
+                      <span className="font-space font-bold text-xl text-[#5de6ff] ai-glow-text">{avgScore}%</span>
                    </div>
                 </div>
               </div>
 
-              <div className="flex flex-col gap-4 relative">
+               <div className="flex flex-col gap-4 relative">
                 {/* Decorative Timeline Line */}
                 <div className="absolute left-8 top-10 bottom-10 w-[2px] bg-[rgba(255,255,255,0.02)] hidden md:block" />
                 
-                {reportData.map((report, idx) => (
-                  <div key={idx} className="relative">
-                    <ReportCard 
-                      {...report} 
-                      index={idx} 
-                    />
+                {filteredReports.length > 0 ? (
+                  filteredReports.map((report, idx) => (
+                    <div key={report._id} className="relative">
+                      <ReportCard 
+                        role={report.title}
+                        score={report.matchScore}
+                        date={new Date(report.createdAt).toLocaleDateString()}
+                        reportId={report._id}
+                        index={idx} 
+                      />
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-20 glass-surface rounded-[2rem] border border-[rgba(255,255,255,0.05)]">
+                    <p className="text-[#94a3b8] font-inter">
+                      {searchQuery ? "No matching reports found for your query." : "No reports generated yet. Start your first AI analysis!"}
+                    </p>
                   </div>
-                ))}
+                )}
               </div>
             </motion.section>
             
@@ -114,11 +159,6 @@ const DashboardPage = () => {
             <div className="h-24 w-full" />
           </div>
         </main>
-
-        {/* Right AI Status Panel Fixed Width */}
-        <div className="w-[340px] h-full hidden 2xl:block z-50 mr-6">
-          <AIStatusPanel />
-        </div>
       </div>
     </div>
   );
