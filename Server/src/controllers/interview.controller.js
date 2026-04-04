@@ -1,6 +1,69 @@
 import { PDFParse as pdfparse } from 'pdf-parse';
-import { generateInterviewReport, generateResumePdf } from '../services/ai.service.js';
+import { generateInterviewReport, generateResumePdf, generatePdfFromHtml } from '../services/ai.service.js';
 import interiviewReportModel from '../models/interviewReport.model.js';
+
+function normalizeSkillGap(gap) {
+    if (!gap || typeof gap !== 'object') {
+        return null;
+    }
+
+    const skill = gap.skill ?? gap.name ?? gap.issue ?? gap.gap ?? gap.category ?? gap.area;
+    const severity = ['low', 'medium', 'high'].includes(String(gap.severity).toLowerCase())
+        ? String(gap.severity).toLowerCase()
+        : 'medium';
+
+    if (!skill || !String(skill).trim()) {
+        return null;
+    }
+
+    return {
+        skill: String(skill).trim(),
+        severity,
+    };
+}
+
+function normalizeReportPayload(report, fallbackTitle) {
+    const normalizedSkillGaps = Array.isArray(report.skillGaps)
+        ? report.skillGaps.map(normalizeSkillGap).filter(Boolean)
+        : [];
+
+    return {
+        ...report,
+        title: typeof report.title === 'string' && report.title.trim()
+            ? report.title.trim()
+            : fallbackTitle?.trim() || 'Interview Report',
+        technicalQuestions: Array.isArray(report.technicalQuestions) ? report.technicalQuestions : [],
+        behavioralQuestions: Array.isArray(report.behavioralQuestions) ? report.behavioralQuestions : [],
+        skillGaps: normalizedSkillGaps,
+        preparationPlan: Array.isArray(report.preparationPlan) ? report.preparationPlan : [],
+        matchScore: Number.isFinite(Number(report.matchScore)) ? Number(report.matchScore) : 0,
+    };
+}
+
+function buildReportHighlights(report) {
+    return [
+        {
+            label: 'Match Score',
+            value: `${report.matchScore ?? 0}%`,
+            note: 'Overall role alignment',
+        },
+        {
+            label: 'Technical Qs',
+            value: String(report.technicalQuestions?.length ?? 0),
+            note: 'Interview preparation set',
+        },
+        {
+            label: 'Skill Gaps',
+            value: String(report.skillGaps?.length ?? 0),
+            note: 'Areas to improve',
+        },
+        {
+            label: 'Prep Plan',
+            value: `${report.preparationPlan?.length ?? 0} days`,
+            note: 'Day-wise preparation plan',
+        },
+    ];
+}
 
 async function interviewcontroller(req, res) {
     console.log('--- ENTERING INTERVIEW CONTROLLER ---');
@@ -47,19 +110,31 @@ async function interviewcontroller(req, res) {
             selfdescription,
             jobdescription
         });
+        const normalizedReport = normalizeReportPayload(report, jobdescription);
+
+        const { html: generatedResumeHtml } = await generateResumePdf({
+            resume: resumeText,
+            selfDescription: selfdescription,
+            jobDescription: jobdescription,
+        });
 
         const interviewReport = new interiviewReportModel({
             user: req.user.id,
             resume: resumeText,
             selfDescription: selfdescription,
             jobDescription: jobdescription,
-            ...report
+            generatedResumeHtml,
+            ...normalizedReport
         });
         await interviewReport.save();
         return res.status(200).json({
             message: 'Interview report generated successfully',
             success: true,
-            data: report
+            data: {
+                ...normalizedReport,
+                reportId: interviewReport._id,
+                highlights: buildReportHighlights(normalizedReport),
+            }
         });
     } catch (error) {
         console.error('Error generating interview report:', error);
@@ -101,7 +176,7 @@ async function getAllInterviewReports(req,res) {
     try {
         const reports = await interiviewReportModel.find({ user: req.user.id })
             .sort({ createdAt: -1 })
-            .select('-resume -selfDescription -jobDescription -__v -technicalQuestions -behavioralQuestions -skillGaps -preparationPlan')
+            .select('-resume -generatedResumeHtml -selfDescription -jobDescription -__v -technicalQuestions -behavioralQuestions -skillGaps -preparationPlan')
             .catch(err => {
                 if (isMockUser) {
                     console.warn('⚠️ DB Connection failed. Returning Neural Mock Reports for UI testing.');
@@ -152,13 +227,22 @@ async function downloadInterviewReport(req, res) {
             return res.status(404).json({ error: 'Interview report not found' });
         }
 
-        const {resume, selfDescription, jobDescription, technicalQuestions, behavioralQuestions, skillGaps, preparationPlan} = report;
+        let pdfContent;
 
-        const pdfContent = await generateResumePdf({ resume, selfDescription, jobDescription, technicalQuestions, behavioralQuestions, skillGaps, preparationPlan });
+        if (report.generatedResumeHtml) {
+            pdfContent = await generatePdfFromHtml(report.generatedResumeHtml);
+        } else {
+            const generated = await generateResumePdf({
+                resume: report.resume,
+                selfDescription: report.selfDescription,
+                jobDescription: report.jobDescription,
+            });
+            pdfContent = generated.pdfBuffer;
+        }
 
         res.set({
             'Content-Type': 'application/pdf',
-            'Content-Disposition': `attachment; filename=interview_report_${reportId}.pdf`,
+            'Content-Disposition': `attachment; filename=generated_resume_${reportId}.pdf`,
         });
 
         return res.send(pdfContent);
@@ -168,4 +252,4 @@ async function downloadInterviewReport(req, res) {
     }
 }
 
-export { interviewcontroller, getinterviewreport, getAllInterviewReports, downloadInterviewReport }
+export { interviewcontroller, getinterviewreport, getAllInterviewReports, downloadInterviewReport, normalizeReportPayload }

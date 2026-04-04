@@ -23,9 +23,11 @@ const Login = () => {
 
     try {
       const { data } = await loginUser(formData);
-      if (data.user && data.user.accessToken) {
+      if (data.user && (data.user.accessToken)) {
         setAccessToken(data.user.accessToken);
-        setUser(data.user);
+        // Normalize: server returns 'id', but many components use '_id'
+        const normalizedUser = { ...data.user, _id: data.user._id || data.user.id };
+        setUser(normalizedUser);
         console.log('✅ Login successful, access token stored');
         navigate('/dashboard');
       } else {

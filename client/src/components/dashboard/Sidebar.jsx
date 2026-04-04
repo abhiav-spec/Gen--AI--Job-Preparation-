@@ -31,7 +31,7 @@ const Sidebar = () => {
     { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/dashboard' },
     { icon: <Bot size={20} />, label: 'Mock Interviews', path: '/dashboard/mock-interviews' },
     { icon: <FileText size={20} />, label: 'Report Generator', path: '/dashboard/report-generator' },
-    { icon: <PieChart size={20} />, label: 'Skill Analysis', path: '/dashboard/skill-analysis' },
+    { icon: <PieChart size={20} />, label: 'View Report', path: '/dashboard/view-report' },
     { icon: <Settings size={20} />, label: 'Settings', path: '/dashboard/settings' },
   ];
 

@@ -69,6 +69,9 @@ const interviewReportSchema = new mongoose.Schema({
     resume: {
         type: String
     },
+    generatedResumeHtml: {
+        type: String
+    },
     selfDescription: {
         type: String
     },

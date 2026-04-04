@@ -20,12 +20,18 @@ const Register = () => {
     setLoading(true);
 
     try {
-      await registerUser(formData);
+      const { data } = await registerUser(formData);
       // Store email in sessionStorage to pass it on to the verify page
       sessionStorage.setItem('pending_verification_email', formData.email);
+      // If email sending failed in dev mode, store the OTP so user can still verify
+      if (data.devOtp) {
+        sessionStorage.setItem('dev_otp', data.devOtp);
+      } else {
+        sessionStorage.removeItem('dev_otp');
+      }
       navigate('/verify-email');
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed. Try again later.');
+      setError(err.response?.data?.error || err.response?.data?.message || 'Registration failed. Try again later.');
     } finally {
       setLoading(false);
     }

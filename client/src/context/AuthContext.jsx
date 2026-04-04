@@ -9,6 +9,12 @@ import {
 
 const AuthContext = createContext();
 
+// Normalize user shape: server returns 'id' but many places use '_id'
+const normalizeUser = (u) => {
+  if (!u) return null;
+  return { ...u, _id: u._id || u.id, id: u.id || u._id };
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -24,7 +30,7 @@ export const AuthProvider = ({ children }) => {
       
       if (accessToken) {
         setAccessToken(accessToken);
-        setUser(user);
+        setUser(normalizeUser(user));
         console.log('✅ Session restored from refresh token');
       }
     } catch (error) {

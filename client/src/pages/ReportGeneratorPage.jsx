@@ -21,6 +21,7 @@ const ReportGeneratorPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isSuccess, setIsSuccess] = useState(false); // New success state
+  const [generatedReport, setGeneratedReport] = useState(null);
 
   const handleFileDrop = (e) => {
     e.preventDefault();
@@ -57,7 +58,8 @@ const ReportGeneratorPage = () => {
 
     setLoading(true);
     setError('');
-    setReportResult(null);
+    setIsSuccess(false);
+    setGeneratedReport(null);
 
     try {
       const formData = new FormData();
@@ -67,6 +69,11 @@ const ReportGeneratorPage = () => {
 
       const res = await generateInterviewReport(formData);
       if (res.data.success) {
+        const generated = res.data.data || null;
+        if (generated?.reportId) {
+          localStorage.setItem('latestReportId', generated.reportId);
+        }
+        setGeneratedReport(generated);
         setIsSuccess(true);
       } else {
         setError(res.data.error || 'Failed to generate report.');
@@ -84,18 +91,18 @@ const ReportGeneratorPage = () => {
   return (
     <div className="min-h-screen text-white flex overflow-hidden font-inter relative z-10">
       {/* Background is handled globally by ThreeBackground in App.jsx */}
-      <div className="w-[300px] h-full relative hidden xl:block z-50"><Sidebar /></div>
+      <div className="w-75 h-full relative hidden xl:block z-50"><Sidebar /></div>
 
       <main className="flex-1 h-full overflow-y-auto overflow-x-hidden relative scroll-smooth px-6 xl:px-8 pb-12 z-10 custom-scrollbar">
-        <div className="max-w-[1200px] mx-auto w-full pt-12">
+        <div className="max-w-300 mx-auto w-full pt-12">
 
           {/* Header */}
           <div className="mb-10">
             <div className="flex items-center gap-2 text-[10px] font-space font-bold uppercase tracking-widest text-[#94a3b8] mb-6">
-              <span>Dashboard</span><span className="text-[#5de6ff]">{'>'}</span>
-              <span className="text-[#5de6ff]">Generate AI Report</span>
+              <span>Dashboard</span><span className="text-secondary">{'>'}</span>
+              <span className="text-secondary">Generate AI Report</span>
             </div>
-            <span className="inline-block px-3 py-1 bg-[rgba(93,230,255,0.1)] border border-[rgba(93,230,255,0.2)] rounded-full text-[10px] font-space text-[#5de6ff] uppercase tracking-widest mb-4 font-bold">
+            <span className="inline-block px-3 py-1 bg-[rgba(93,230,255,0.1)] border border-[rgba(93,230,255,0.2)] rounded-full text-[10px] font-space text-secondary uppercase tracking-widest mb-4 font-bold">
               Lab Environment v4.2
             </span>
             <h1 className="font-space text-5xl font-bold tracking-tighter text-white mb-4">Generate AI Report</h1>
@@ -121,28 +128,28 @@ const ReportGeneratorPage = () => {
               <div className="glass-surface rounded-3xl p-6 border border-[rgba(255,255,255,0.05)] flex flex-col group">
                 <div className="flex justify-between items-center mb-4">
                   <div className="flex items-center gap-3">
-                    <FileText className="text-[#5de6ff]" size={18} />
+                    <FileText className="text-secondary" size={18} />
                     <h3 className="font-space font-bold tracking-tight text-lg text-white">Resume Upload</h3>
                   </div>
                   <span className="text-[9px] uppercase tracking-widest text-[#94a3b8] font-bold">PDF, DOCX</span>
                 </div>
 
                 <div
-                  className={`rounded-2xl border-2 border-dashed flex flex-col items-center justify-center relative transition-colors duration-300 min-h-[140px] ${resumeFile ? 'border-[#5de6ff] bg-[rgba(93,230,255,0.02)]' : 'border-[rgba(255,255,255,0.08)] hover:border-[rgba(93,230,255,0.4)] bg-[rgba(0,0,0,0.15)]'}`}
+                  className={`rounded-2xl border-2 border-dashed flex flex-col items-center justify-center relative transition-colors duration-300 min-h-35 ${resumeFile ? 'border-secondary bg-[rgba(93,230,255,0.02)]' : 'border-surface-container-high hover:border-[rgba(93,230,255,0.4)] bg-[rgba(0,0,0,0.15)]'}`}
                   onDragOver={(e) => e.preventDefault()} onDrop={handleFileDrop}
                 >
                   <input type="file" accept=".pdf,.docx" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
                   {resumeFile ? (
                     <div className="flex flex-col items-center gap-2 p-4">
-                      <File className="text-[#5de6ff]" size={32} />
+                      <File className="text-secondary" size={32} />
                       <span className="text-sm font-medium text-white">{resumeFile.name}</span>
-                      <span className="text-xs text-[#5de6ff]">Click to change</span>
+                      <span className="text-xs text-secondary">Click to change</span>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center gap-2 p-6 text-center">
                       <Upload className="text-[#94a3b8] mb-1" size={28} />
                       <div className="text-sm font-inter text-[#94a3b8]">
-                        <span className="text-white font-medium">Drag and drop or</span> <span className="text-[#5de6ff] underline underline-offset-4 font-medium">browse files</span>
+                        <span className="text-white font-medium">Drag and drop or</span> <span className="text-secondary underline underline-offset-4 font-medium">browse files</span>
                       </div>
                       <span className="text-xs text-[rgba(148,163,184,0.5)]">Max 10MB</span>
                     </div>
@@ -155,14 +162,14 @@ const ReportGeneratorPage = () => {
               <div className="glass-surface rounded-3xl p-6 border border-[rgba(255,255,255,0.05)] h-56 flex flex-col">
                 <div className="flex justify-between items-center mb-4">
                   <div className="flex items-center gap-3">
-                    <Settings className="text-[#5de6ff]" size={18} />
+                    <Settings className="text-secondary" size={18} />
                     <h3 className="font-space font-bold tracking-tight text-lg text-white">Professional Persona</h3>
                   </div>
                   <span className="text-[9px] uppercase tracking-widest text-[#94a3b8] font-bold">Self-Description</span>
                 </div>
                 <textarea
                   value={selfDescription} onChange={(e) => setSelfDescription(e.target.value)}
-                  className="flex-1 w-full bg-[rgba(0,0,0,0.2)] border border-[rgba(255,255,255,0.05)] rounded-2xl p-4 text-sm text-white font-inter placeholder:text-[#94a3b8] focus:outline-none focus:border-[#5de6ff] resize-none transition-colors"
+                  className="flex-1 w-full bg-[rgba(0,0,0,0.2)] border border-[rgba(255,255,255,0.05)] rounded-2xl p-4 text-sm text-white font-inter placeholder:text-[#94a3b8] focus:outline-none focus:border-secondary resize-none transition-colors"
                   placeholder="Describe your career goals, key achievements, and unique value proposition..."
                 />
               </div>
@@ -174,14 +181,14 @@ const ReportGeneratorPage = () => {
               <div className="glass-surface rounded-3xl p-6 border border-[rgba(255,255,255,0.05)] flex-1 flex flex-col">
                 <div className="flex justify-between items-center mb-4">
                   <div className="flex items-center gap-3">
-                    <Target className="text-[#5de6ff]" size={18} />
+                    <Target className="text-secondary" size={18} />
                     <h3 className="font-space font-bold tracking-tight text-lg text-white">Target Role</h3>
                   </div>
                   <span className="text-[9px] uppercase tracking-widest text-[#94a3b8] font-bold bg-[rgba(255,255,255,0.05)] px-2 py-1 rounded">Raw Text</span>
                 </div>
                 <textarea
                   value={jobDescription} onChange={(e) => setJobDescription(e.target.value)}
-                  className="flex-1 w-full bg-[rgba(0,0,0,0.2)] border border-[rgba(255,255,255,0.05)] rounded-2xl p-4 text-sm text-white font-inter placeholder:text-[#94a3b8] focus:outline-none focus:border-[#5de6ff] resize-none transition-colors min-h-[200px]"
+                  className="flex-1 w-full bg-[rgba(0,0,0,0.2)] border border-[rgba(255,255,255,0.05)] rounded-2xl p-4 text-sm text-white font-inter placeholder:text-[#94a3b8] focus:outline-none focus:border-secondary resize-none transition-colors min-h-50"
                   placeholder="Paste the job description or requirements here..."
                 />
               </div>
@@ -189,7 +196,7 @@ const ReportGeneratorPage = () => {
               {/* Synthesis Params */}
               <div className="glass-surface rounded-3xl p-6 border border-[rgba(255,255,255,0.05)]">
                 <div className="flex items-center gap-3 mb-6">
-                  <Activity className="text-[#5de6ff]" size={18} />
+                  <Activity className="text-secondary" size={18} />
                   <h3 className="font-space font-bold tracking-tight text-lg text-white">Synthesis Parameters</h3>
                 </div>
                 <div className="flex flex-col gap-4 mb-6">
@@ -199,8 +206,8 @@ const ReportGeneratorPage = () => {
                   ].map(p => (
                     <div key={p.label} className="flex justify-between items-center p-3 rounded-xl bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)]">
                       <span className="text-sm font-medium text-white">{p.label}</span>
-                      <button onClick={p.toggle} className={`w-10 h-5 rounded-full relative transition-colors ${p.state ? 'bg-[#5de6ff]' : 'bg-[rgba(255,255,255,0.1)]'}`}>
-                        <motion.div animate={{ x: p.state ? 20 : 2 }} className="w-4 h-4 bg-white rounded-full absolute top-[2px]" />
+                      <button onClick={p.toggle} className={`w-10 h-5 rounded-full relative transition-colors ${p.state ? 'bg-secondary' : 'bg-outline-variant'}`}>
+                        <motion.div animate={{ x: p.state ? 20 : 2 }} className="w-4 h-4 bg-white rounded-full absolute top-0.5" />
                       </button>
                     </div>
                   ))}
@@ -208,14 +215,14 @@ const ReportGeneratorPage = () => {
 
                 <button
                   onClick={handleSubmit} disabled={loading}
-                  className="w-full py-4 rounded-xl ai-gradient-bg text-[#0c0c1d] font-space font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50 hover:shadow-[0_0_20px_rgba(93,230,255,0.4)] transition-all"
+                  className="w-full py-4 rounded-xl ai-gradient-bg text-surface-lowest font-space font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50 hover:shadow-[0_0_20px_rgba(93,230,255,0.4)] transition-all"
                 >
                   {loading ? <><Activity className="animate-spin" size={16} /> Analyzing — please wait...</> : <>START AI ANALYSIS <Zap size={16} /></>}
                 </button>
 
                 <div className="text-center mt-4 text-[9px] uppercase tracking-widest text-[#94a3b8] font-bold">
                   {activeResumeName
-                    ? <>Using: <span className="text-[#5de6ff]">{activeResumeName}</span></>
+                    ? <>Using: <span className="text-secondary">{activeResumeName}</span></>
                     : loading ? '⚡ Neural engine processing...' : 'Estimated time: ~30–60s'}
                 </div>
               </div>
@@ -227,20 +234,73 @@ const ReportGeneratorPage = () => {
             <motion.div 
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="mt-12 glass-surface rounded-3xl p-12 border border-[rgba(93,230,255,0.2)] text-center flex flex-col items-center gap-6"
+              className="mt-12 glass-surface rounded-3xl p-8 md:p-12 border border-[rgba(93,230,255,0.2)] flex flex-col items-stretch gap-6"
             >
-              <div className="w-20 h-20 rounded-full ai-gradient-bg flex items-center justify-center shadow-[0_0_30px_rgba(93,230,255,0.3)]">
-                <CheckCircle size={40} className="text-[#0c0c1d]" />
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-full ai-gradient-bg flex items-center justify-center shadow-[0_0_30px_rgba(93,230,255,0.3)] shrink-0">
+                    <CheckCircle size={34} className="text-surface-lowest" />
+                  </div>
+                  <div>
+                    <h2 className="font-space text-3xl font-bold text-white mb-1">Analysis Synchronized</h2>
+                    <p className="font-inter text-[#94a3b8] max-w-xl">
+                      The neural synthesis is complete. Your AI interview report and generated resume are ready for review.
+                    </p>
+                  </div>
+                </div>
+                {generatedReport?.reportId && (
+                  <a
+                    href={`/dashboard/report/${generatedReport.reportId}`}
+                    className="px-6 py-3 rounded-xl ai-gradient-bg text-surface-lowest font-space font-bold uppercase tracking-widest text-sm hover:shadow-[0_0_20px_rgba(93,230,255,0.4)] transition-all text-center"
+                  >
+                    View Full Report
+                  </a>
+                )}
               </div>
-              <div>
-                <h2 className="font-space text-3xl font-bold text-white mb-2">Analysis Synchronized</h2>
-                <p className="font-inter text-[#94a3b8] max-w-md mx-auto">
-                  The neural synthesis is complete. Your AI interview report has been archived and is ready for review in your command center.
-                </p>
-              </div>
+
+              {generatedReport && (
+                <>
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {(generatedReport.highlights || [
+                      { label: 'Match Score', value: `${generatedReport.matchScore ?? 0}%`, note: 'Role alignment' },
+                      { label: 'Technical Qs', value: generatedReport.technicalQuestions?.length ?? 0, note: 'Prepared questions' },
+                      { label: 'Skill Gaps', value: generatedReport.skillGaps?.length ?? 0, note: 'Improvement areas' },
+                      { label: 'Prep Days', value: `${generatedReport.preparationPlan?.length ?? 0} days`, note: 'Action plan' },
+                    ]).map((item) => (
+                      <div key={item.label} className="rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-4 text-left">
+                        <div className="text-[9px] font-space font-bold uppercase tracking-widest text-[#94a3b8]">{item.label}</div>
+                        <div className="font-space text-2xl font-bold text-white mt-2">{item.value}</div>
+                        <div className="text-[10px] text-[#94a3b8] mt-1">{item.note}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div className="rounded-3xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-5 text-left">
+                      <h3 className="font-space text-sm font-bold text-white uppercase tracking-widest mb-3">Top Signals</h3>
+                      <div className="flex flex-col gap-2">
+                        <div className="text-sm text-[#e2e8f0]">Match score: <span className="text-secondary font-semibold">{generatedReport.matchScore ?? 0}%</span></div>
+                        <div className="text-sm text-[#e2e8f0]">Technical questions: <span className="text-secondary font-semibold">{generatedReport.technicalQuestions?.length ?? 0}</span></div>
+                        <div className="text-sm text-[#e2e8f0]">Behavioral questions: <span className="text-secondary font-semibold">{generatedReport.behavioralQuestions?.length ?? 0}</span></div>
+                        <div className="text-sm text-[#e2e8f0]">Skill gaps: <span className="text-secondary font-semibold">{generatedReport.skillGaps?.length ?? 0}</span></div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-3xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-5 text-left">
+                      <h3 className="font-space text-sm font-bold text-white uppercase tracking-widest mb-3">What You Can Do Next</h3>
+                      <div className="flex flex-col gap-2 text-sm text-[#e2e8f0]">
+                        <div>Open the full report for technical, behavioral, skill gap, prep plan, and resume tabs.</div>
+                        <div>Download the AI generated resume as a PDF from the resume section.</div>
+                        <div>Use the highlighted gaps to focus your interview preparation.</div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
               <a 
                 href="/dashboard"
-                className="px-8 py-4 rounded-xl ai-gradient-bg text-[#0c0c1d] font-space font-bold uppercase tracking-widest text-sm hover:shadow-[0_0_20px_rgba(93,230,255,0.4)] transition-all"
+                className="px-8 py-4 rounded-xl glass-surface border border-surface-container-high text-[#94a3b8] font-space font-bold uppercase tracking-widest text-sm hover:text-white hover:border-[rgba(93,230,255,0.3)] transition-all text-center"
               >
                 Go to Dashboard
               </a>

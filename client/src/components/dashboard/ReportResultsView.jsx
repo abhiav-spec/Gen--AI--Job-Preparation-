@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Brain, Shield, TrendingUp, Clock, AlertTriangle, ChevronDown, ChevronUp, Star, CheckCircle, AlertCircle
+  Brain, Shield, TrendingUp, Clock, AlertTriangle, ChevronDown, ChevronUp, Star, CheckCircle, AlertCircle, FileText, Download
 } from 'lucide-react';
 
 // ─── Score Ring ────────────────────────────────────────────────────────────
@@ -68,7 +68,7 @@ const QACard = ({ item, index, color = '#5de6ff' }) => {
         onClick={() => setOpen(!open)}
       >
         <div className="flex items-start gap-3 flex-1 min-w-0">
-          <span className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-space font-bold text-[#0c0c1d] mt-0.5" style={{ background: color }}>
+          <span className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-space font-bold text-surface-lowest mt-0.5" style={{ background: color }}>
             {index + 1}
           </span>
           <p className="text-sm text-white font-medium leading-relaxed">{item.question}</p>
@@ -87,7 +87,7 @@ const QACard = ({ item, index, color = '#5de6ff' }) => {
             <div className="px-4 pb-4 flex flex-col gap-3 border-t border-[rgba(255,255,255,0.05)] pt-3">
               <div>
                 <span className="text-[9px] uppercase tracking-widest font-bold text-[#94a3b8] font-space block mb-1">Interviewer's Intention</span>
-                <p className="text-xs text-[#c0c1ff] leading-relaxed">{item.intention}</p>
+                <p className="text-xs text-primary leading-relaxed">{item.intention}</p>
               </div>
               <div>
                 <span className="text-[9px] uppercase tracking-widest font-bold text-[#94a3b8] font-space block mb-1">How to Answer</span>
@@ -101,22 +101,130 @@ const QACard = ({ item, index, color = '#5de6ff' }) => {
   );
 };
 
-const ReportResultsView = ({ report }) => {
-  const { matchScore, technicalQuestions, behavioralQuestions, skillGaps, preparationPlan, title } = report;
+const stripHtml = (html = '') => html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 
-  const tabs = ['Overview', 'Technical', 'Behavioral', 'Skill Gaps', 'Prep Plan'];
-  const [tab, setTab] = useState('Overview');
+const summarizeText = (text = '', limit = 360) => {
+  const normalized = text.replace(/\s+/g, ' ').trim();
+  if (normalized.length <= limit) return normalized;
+  return `${normalized.slice(0, limit).trim()}...`;
+};
+
+const buildResumeComparison = (report) => {
+  const resumeText = report.resume?.trim() || '';
+  const generatedResumeText = report.generatedResumeHtml ? stripHtml(report.generatedResumeHtml) : '';
+
+  return [
+    {
+      title: 'Structure',
+      current: resumeText ? 'Raw uploaded resume text' : 'No resume text available',
+      generated: 'ATS-friendly, sectioned resume layout',
+    },
+    {
+      title: 'Targeting',
+      current: 'General profile snapshot',
+      generated: `Tailored to ${report.title || 'the target role'}`,
+    },
+    {
+      title: 'Keyword Alignment',
+      current: 'Original wording from the uploaded file',
+      generated: `${report.skillGaps?.length ?? 0} skill gap signals translated into stronger keywords`,
+    },
+    {
+      title: 'Impact',
+      current: 'As provided in the source resume',
+      generated: `${report.matchScore ?? 0}% role alignment with a more persuasive presentation`,
+    },
+  ].concat(generatedResumeText ? [{
+    title: 'Preview Size',
+    current: `${resumeText.split(/\s+/).filter(Boolean).length} words in source resume`,
+    generated: `${generatedResumeText.split(/\s+/).filter(Boolean).length} words in optimized version`,
+  }] : []);
+};
+
+const normalizeQuestionItem = (item, index, fallbackPrefix) => {
+  if (!item || typeof item !== 'object') {
+    return {
+      question: `${fallbackPrefix} ${index + 1}`,
+      intention: 'No interviewer intention was generated for this item.',
+      answer: 'No suggested answer is available for this item.',
+    };
+  }
+
+  return {
+    question: item.question || item.prompt || item.title || `${fallbackPrefix} ${index + 1}`,
+    intention: item.intention || item.reason || item.goal || 'No interviewer intention was generated for this item.',
+    answer: item.answer || item.sampleAnswer || item.guidance || 'No suggested answer is available for this item.',
+  };
+};
+
+const normalizePrepDay = (dayItem, index) => {
+  const dayNumber = Number(dayItem?.day);
+  return {
+    day: Number.isFinite(dayNumber) && dayNumber > 0 ? dayNumber : index + 1,
+    focus: dayItem?.focus || dayItem?.topic || 'Preparation Focus',
+    tasks: Array.isArray(dayItem?.tasks) && dayItem.tasks.length > 0
+      ? dayItem.tasks
+      : ['Review role requirements', 'Practice one targeted interview round'],
+  };
+};
+
+const ReportResultsView = ({ report, onDownloadResume }) => {
+  const {
+    matchScore,
+    technicalQuestions = [],
+    behavioralQuestions = [],
+    skillGaps = [],
+    preparationPlan = [],
+    title,
+    resume = '',
+    generatedResumeHtml = '',
+  } = report;
+
+  const normalizedTechnicalQuestions = (Array.isArray(technicalQuestions) ? technicalQuestions : [])
+    .map((item, index) => normalizeQuestionItem(item, index, 'Technical Question'));
+  const normalizedBehavioralQuestions = (Array.isArray(behavioralQuestions) ? behavioralQuestions : [])
+    .map((item, index) => normalizeQuestionItem(item, index, 'Behavioral Question'));
+  const normalizedSkillGaps = (Array.isArray(skillGaps) ? skillGaps : [])
+    .filter((item) => item && typeof item === 'object')
+    .map((item) => ({
+      skill: item.skill || item.name || item.gap || item.issue || 'Unspecified skill gap',
+      severity: ['high', 'medium', 'low'].includes(String(item.severity).toLowerCase())
+        ? String(item.severity).toLowerCase()
+        : 'medium',
+    }));
+  const normalizedPreparationPlan = (Array.isArray(preparationPlan) ? preparationPlan : [])
+    .map((item, index) => normalizePrepDay(item, index));
+
+  const tabs = ['Technical Questions', 'Behavioral Questions', 'Skill Gap', 'Preparation Plan', 'Resume'];
+  const [tab, setTab] = useState('Technical Questions');
+  const resumeComparison = buildResumeComparison(report);
+  const generatedResumePreview = generatedResumeHtml ? generatedResumeHtml : '';
 
   return (
     <div className="mt-10">
       <div className="flex items-center gap-3 mb-6">
         <div className="w-8 h-8 rounded-xl ai-gradient-bg flex items-center justify-center">
-          <Brain size={16} className="text-[#0c0c1d]" />
+          <Brain size={16} className="text-surface-lowest" />
         </div>
         <div>
-          <span className="text-[9px] font-space uppercase tracking-widest text-[#5de6ff] font-bold block">Interview Intelligence</span>
+          <span className="text-[9px] font-space uppercase tracking-widest text-secondary font-bold block">Interview Intelligence</span>
           <h2 className="font-space text-xl font-bold text-white tracking-tight">{title}</h2>
         </div>
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {[
+          { label: 'Match Score', value: `${matchScore ?? 0}%`, sub: 'Role alignment' },
+          { label: 'Technical Qs', value: normalizedTechnicalQuestions.length, sub: 'Prepared questions' },
+          { label: 'Skill Gaps', value: normalizedSkillGaps.length, sub: 'Areas to improve' },
+          { label: 'Prep Days', value: normalizedPreparationPlan.length, sub: 'Action plan' },
+        ].map((s) => (
+          <div key={s.label} className="glass-surface rounded-2xl p-4 border border-[rgba(255,255,255,0.05)]">
+            <div className="text-[9px] font-space font-bold uppercase tracking-widest text-[#94a3b8]">{s.label}</div>
+            <div className="font-space text-3xl font-bold text-white mt-2">{s.value}</div>
+            <div className="text-[10px] text-[#94a3b8] mt-0.5">{s.sub}</div>
+          </div>
+        ))}
       </div>
 
       <div className="flex gap-1 p-1 rounded-2xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] mb-6 overflow-x-auto no-scrollbar">
@@ -126,7 +234,7 @@ const ReportResultsView = ({ report }) => {
             onClick={() => setTab(t)}
             className={`shrink-0 px-4 py-2 rounded-xl text-xs font-space font-bold uppercase tracking-wider transition-all ${
               tab === t
-                ? 'ai-gradient-bg text-[#0c0c1d]'
+                ? 'ai-gradient-bg text-surface-lowest'
                 : 'text-[#94a3b8] hover:text-white'
             }`}
           >
@@ -136,75 +244,25 @@ const ReportResultsView = ({ report }) => {
       </div>
 
       <AnimatePresence mode="wait">
-        {tab === 'Overview' && (
-          <motion.div key="overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="md:col-span-1 glass-surface rounded-3xl p-6 border border-[rgba(255,255,255,0.05)] flex flex-col items-center gap-4">
-                <span className="text-[9px] font-space font-bold uppercase tracking-widest text-[#94a3b8]">Match Score</span>
-                <ScoreRing score={matchScore} />
-                <p className="text-xs text-[#94a3b8] text-center font-inter">
-                  {matchScore >= 75 ? '🎯 Strong match — well aligned with job requirements' :
-                   matchScore >= 50 ? '⚡ Moderate match — some gaps to address' :
-                   '⚠️ Weak match — significant preparation needed'}
-                </p>
-              </div>
-
-              <div className="md:col-span-2 grid grid-cols-2 gap-4">
-                {[
-                  { label: 'Technical Qs', value: technicalQuestions?.length, icon: <Brain size={18} className="text-[#5de6ff]" />, sub: 'Questions prepared' },
-                  { label: 'Behavioral Qs', value: behavioralQuestions?.length, icon: <Shield size={18} className="text-[#c0c1ff]" />, sub: 'Scenarios prepared' },
-                  { label: 'Skill Gaps', value: skillGaps?.length, icon: <TrendingUp size={18} className="text-yellow-400" />, sub: 'Areas to improve' },
-                  { label: 'Prep Days', value: preparationPlan?.length, icon: <Clock size={18} className="text-green-400" />, sub: 'Day plan ready' },
-                ].map((s, i) => (
-                  <motion.div
-                    key={s.label}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: i * 0.08 }}
-                    className="glass-surface rounded-2xl p-4 border border-[rgba(255,255,255,0.05)]"
-                  >
-                    {s.icon}
-                    <div className="font-space text-3xl font-bold text-white mt-2">{s.value}</div>
-                    <div className="text-xs font-inter font-semibold text-white mt-0.5">{s.label}</div>
-                    <div className="text-[10px] text-[#94a3b8]">{s.sub}</div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-
-            {skillGaps?.length > 0 && (
-              <div className="mt-6 glass-surface rounded-3xl p-6 border border-[rgba(255,255,255,0.05)]">
-                <h4 className="font-space text-sm font-bold text-white mb-4 flex items-center gap-2">
-                  <AlertTriangle size={14} className="text-yellow-400" /> Skill Gap Summary
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {skillGaps.map((g, i) => (
-                    <div key={i} className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)]">
-                      <span className="text-xs text-white font-medium">{g.skill}</span>
-                      <SeverityBadge severity={g.severity} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </motion.div>
-        )}
-
-        {tab === 'Technical' && (
+        {tab === 'Technical Questions' && (
           <motion.div key="technical" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-3">
-            {technicalQuestions?.map((q, i) => <QACard key={i} item={q} index={i} color="#5de6ff" />)}
+            {normalizedTechnicalQuestions.length > 0
+              ? normalizedTechnicalQuestions.map((q, i) => <QACard key={i} item={q} index={i} color="#5de6ff" />)
+              : <div className="rounded-2xl border border-dashed border-surface-container-high p-6 text-sm text-[#94a3b8]">No technical questions were generated for this report.</div>}
           </motion.div>
         )}
 
-        {tab === 'Behavioral' && (
+        {tab === 'Behavioral Questions' && (
           <motion.div key="behavioral" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-3">
-            {behavioralQuestions?.map((q, i) => <QACard key={i} item={q} index={i} color="#c0c1ff" />)}
+            {normalizedBehavioralQuestions.length > 0
+              ? normalizedBehavioralQuestions.map((q, i) => <QACard key={i} item={q} index={i} color="#c0c1ff" />)
+              : <div className="rounded-2xl border border-dashed border-surface-container-high p-6 text-sm text-[#94a3b8]">No behavioral questions were generated for this report.</div>}
           </motion.div>
         )}
 
-        {tab === 'Skill Gaps' && (
+        {tab === 'Skill Gap' && (
           <motion.div key="gaps" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-3">
-            {skillGaps?.map((g, i) => (
+            {normalizedSkillGaps.length > 0 ? normalizedSkillGaps.map((g, i) => (
               <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.06)]">
                 <div className="flex items-center gap-3">
                   <div className={`w-2 h-2 rounded-full ${g.severity === 'high' ? 'bg-red-400' : g.severity === 'medium' ? 'bg-yellow-400' : 'bg-green-400'} shadow-[0_0_8px_currentcolor]`} />
@@ -212,16 +270,16 @@ const ReportResultsView = ({ report }) => {
                 </div>
                 <SeverityBadge severity={g.severity} />
               </div>
-            ))}
+            )) : <div className="rounded-2xl border border-dashed border-surface-container-high p-6 text-sm text-[#94a3b8]">No skill gaps were identified in this report.</div>}
           </motion.div>
         )}
 
-        {tab === 'Prep Plan' && (
+        {tab === 'Preparation Plan' && (
           <motion.div key="plan" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-4">
-            {preparationPlan?.map((d, i) => (
+            {normalizedPreparationPlan.length > 0 ? normalizedPreparationPlan.map((d, i) => (
               <div key={i} className="glass-surface rounded-2xl p-5 border border-[rgba(255,255,255,0.05)]">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-8 h-8 rounded-xl ai-gradient-bg flex items-center justify-center text-xs font-space font-bold text-[#0c0c1d]">
+                  <div className="w-8 h-8 rounded-xl ai-gradient-bg flex items-center justify-center text-xs font-space font-bold text-surface-lowest">
                     {d.day}
                   </div>
                   <div>
@@ -232,13 +290,92 @@ const ReportResultsView = ({ report }) => {
                 <ul className="flex flex-col gap-1.5 ml-11">
                   {d.tasks?.map((task, j) => (
                     <li key={j} className="flex items-start gap-2 text-xs text-[#94a3b8] font-inter">
-                      <Star size={10} className="text-[#5de6ff] shrink-0 mt-0.5" />
+                      <Star size={10} className="text-secondary shrink-0 mt-0.5" />
                       {task}
                     </li>
                   ))}
                 </ul>
               </div>
-            ))}
+            )) : <div className="rounded-2xl border border-dashed border-surface-container-high p-6 text-sm text-[#94a3b8]">No preparation plan was generated for this report.</div>}
+          </motion.div>
+        )}
+
+        {tab === 'Resume' && (
+          <motion.div key="resume" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 glass-surface rounded-3xl p-5 border border-[rgba(255,255,255,0.05)]">
+              <div>
+                <span className="text-[9px] font-space font-bold uppercase tracking-widest text-[#94a3b8] block mb-1">AI Generated Resume</span>
+                <h4 className="font-space text-lg font-bold text-white">View and download the optimized resume</h4>
+              </div>
+              <div className="flex gap-3">
+                  <button
+                    onClick={onDownloadResume}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl ai-gradient-bg text-surface-lowest font-space font-bold uppercase tracking-widest text-[10px] hover:shadow-[0_0_20px_rgba(93,230,255,0.4)] transition-all"
+                  >
+                  <Download size={14} /> Download PDF
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <div className="glass-surface rounded-3xl p-5 border border-[rgba(255,255,255,0.05)]">
+                <div className="flex items-center gap-2 mb-4">
+                  <FileText size={16} className="text-primary" />
+                  <h5 className="font-space text-sm font-bold text-white uppercase tracking-widest">Current Resume Snapshot</h5>
+                </div>
+                <div className="max-h-130 overflow-y-auto rounded-2xl border border-[rgba(255,255,255,0.05)] bg-[rgba(0,0,0,0.2)] p-4">
+                  <p className="text-sm leading-7 text-[#e2e8f0] whitespace-pre-wrap font-inter">
+                    {resume ? summarizeText(resume, 2200) : 'No resume text was captured from the uploaded file.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="glass-surface rounded-3xl p-5 border border-[rgba(255,255,255,0.05)]">
+                <div className="flex items-center gap-2 mb-4">
+                  <Brain size={16} className="text-secondary" />
+                  <h5 className="font-space text-sm font-bold text-white uppercase tracking-widest">AI Generated Resume</h5>
+                </div>
+                {generatedResumePreview ? (
+                  <iframe
+                    title="AI Generated Resume Preview"
+                    srcDoc={generatedResumePreview}
+                    className="w-full h-130 rounded-2xl border border-[rgba(255,255,255,0.05)] bg-white"
+                    sandbox="allow-same-origin"
+                  />
+                ) : (
+                  <div className="h-130 rounded-2xl border border-dashed border-surface-container-high flex items-center justify-center text-sm text-[#94a3b8]">
+                    The generated resume preview is not available yet.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="glass-surface rounded-3xl p-5 border border-[rgba(255,255,255,0.05)]">
+              <div className="flex items-center gap-2 mb-4">
+                <TrendingUp size={16} className="text-secondary" />
+                <h5 className="font-space text-sm font-bold text-white uppercase tracking-widest">What Changed</h5>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {resumeComparison.map((item, index) => (
+                  <div key={item.title} className="rounded-2xl border border-[rgba(255,255,255,0.05)] bg-[rgba(255,255,255,0.02)] p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs uppercase tracking-widest font-bold text-[#94a3b8] font-space">{item.title}</span>
+                      <span className="text-[10px] text-secondary font-bold">{index + 1}</span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 text-sm">
+                      <div>
+                        <div className="text-[10px] uppercase tracking-widest text-[#94a3b8] font-bold mb-1">Current</div>
+                        <p className="text-[#e2e8f0] leading-relaxed">{item.current}</p>
+                      </div>
+                      <div>
+                        <div className="text-[10px] uppercase tracking-widest text-[#94a3b8] font-bold mb-1">AI Generated</div>
+                        <p className="text-primary leading-relaxed">{item.generated}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
