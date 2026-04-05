@@ -8,6 +8,7 @@ import {
     getUserProfile,
     logout,
     logoutAll,
+    updateUserProfile,
 } from '../controllers/auth.controller.js';
 
 const router = Router();
@@ -20,5 +21,6 @@ router.post('/refresh-token', refreshToken);
 router.post('/logout', logout);
 router.post('/logout-all', logoutAll);
 router.get('/profile', getUserProfile);
+router.patch('/profile', updateUserProfile);
 
 export default router;

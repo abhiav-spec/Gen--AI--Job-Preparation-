@@ -28,11 +28,11 @@ const Sidebar = () => {
   };
 
   const navItems = [
-    { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/dashboard' },
-    { icon: <Bot size={20} />, label: 'Mock Interviews', path: '/dashboard/mock-interviews' },
-    { icon: <FileText size={20} />, label: 'Report Generator', path: '/dashboard/report-generator' },
-    { icon: <PieChart size={20} />, label: 'View Report', path: '/dashboard/view-report' },
-    { icon: <Settings size={20} />, label: 'Settings', path: '/dashboard/settings' },
+    { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/dashboard', exact: true },
+    { icon: <Bot size={20} />, label: 'Mock Interviews', path: '/dashboard/mock-interview', navPath: '/dashboard/mock-interviews', exact: false },
+    { icon: <FileText size={20} />, label: 'Report Generator', path: '/dashboard/report-generator', exact: true },
+    { icon: <PieChart size={20} />, label: 'View Report', path: '/dashboard/view-report', exact: true },
+    { icon: <Settings size={20} />, label: 'Settings', path: '/dashboard/settings', exact: true },
   ];
 
   const [showAbout, setShowAbout] = React.useState(false);
@@ -60,11 +60,13 @@ const Sidebar = () => {
         {/* Navigation */}
         <nav className="flex flex-col gap-2">
           {navItems.map((item, idx) => {
-            const active = location.pathname === item.path;
+            const active = item.exact
+              ? location.pathname === item.path
+              : location.pathname.startsWith(item.path);
             return (
             <motion.button
               key={idx}
-              onClick={() => navigate(item.path)}
+              onClick={() => navigate(item.navPath || item.path)}
               whileHover={{ x: 4, backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
               className={`flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 relative ${
                 active 

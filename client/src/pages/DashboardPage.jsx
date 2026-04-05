@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Target, Layers, FileJson, Calendar } from 'lucide-react';
+import { Target, Layers, FileJson, Calendar, Mic, Sparkles } from 'lucide-react';
 import Sidebar from '../components/dashboard/Sidebar';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
 import StatsCard from '../components/dashboard/StatsCard';
@@ -8,54 +8,85 @@ import InterviewStartCard from '../components/dashboard/InterviewStartCard';
 import ReportCard from '../components/dashboard/ReportCard';
 import { useAuth } from '../context/AuthContext';
 import { getInterviewReports } from '../api/interview.api';
-import { useEffect, useState } from 'react';
+import { getAllMockSessions } from '../api/mockInterview.api';
 
 const DashboardPage = () => {
   const { user } = useAuth();
   const [reports, setReports] = useState([]);
-  const [filteredReports, setFilteredReports] = useState([]);
+  const [mockSessions, setMockSessions] = useState([]);
+  const [combinedHistory, setCombinedHistory] = useState([]);
+  const [filteredHistory, setFilteredHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    const fetchReports = async () => {
+    const fetchData = async () => {
       if (!user?._id) return;
       try {
-        const res = await getInterviewReports(user._id);
-        if (res.data.success) {
-          setReports(res.data.data);
-          setFilteredReports(res.data.data);
+        setLoading(true);
+        const [reportsRes, mockRes] = await Promise.all([
+          getInterviewReports(user._id),
+          getAllMockSessions()
+        ]);
+
+        let allReports = [];
+        let allMock = [];
+
+        if (reportsRes.data.success) {
+          allReports = reportsRes.data.data.map(r => ({ ...r, type: 'report' }));
+          setReports(allReports);
         }
+
+        if (mockRes.data.success) {
+          allMock = mockRes.data.data
+            .filter(s => s.status === 'completed')
+            .map(s => ({ 
+              ...s, 
+              type: 'mock', 
+              title: s.role, 
+              matchScore: s.finalReport?.score?.overall * 10 // scale to 100 for consistency
+            }));
+          setMockSessions(allMock);
+        }
+
+        const combined = [...allReports, ...allMock].sort((a, b) => 
+          new Date(b.createdAt) - new Date(a.createdAt)
+        );
+        
+        setCombinedHistory(combined);
+        setFilteredHistory(combined);
       } catch (error) {
-        console.error('Failed to fetch reports:', error);
+        console.error('Failed to fetch dashboard data:', error);
       } finally {
         setLoading(false);
       }
     };
-    fetchReports();
+    fetchData();
   }, [user]);
 
   useEffect(() => {
     if (!searchQuery.trim()) {
-      setFilteredReports(reports);
+      setFilteredHistory(combinedHistory);
     } else {
       const query = searchQuery.toLowerCase();
-      const filtered = reports.filter(r => 
-        r.title?.toLowerCase().includes(query) || 
-        r.jobDescription?.toLowerCase().includes(query)
+      const filtered = combinedHistory.filter(h => 
+        h.title?.toLowerCase().includes(query) || 
+        h.role?.toLowerCase().includes(query) ||
+        h.jobDescription?.toLowerCase().includes(query)
       );
-      setFilteredReports(filtered);
+      setFilteredHistory(filtered);
     }
-  }, [searchQuery, reports]);
+  }, [searchQuery, combinedHistory]);
 
-  const avgScore = reports.length > 0 
-    ? Math.round(reports.reduce((acc, r) => acc + r.matchScore, 0) / reports.length) 
-    : 0;
+  const totalSimulations = reports.length + mockSessions.length;
+  const totalScore = reports.reduce((acc, r) => acc + r.matchScore, 0) + 
+                    mockSessions.reduce((acc, s) => acc + s.matchScore, 0);
+  const avgScore = totalSimulations > 0 ? Math.round(totalScore / totalSimulations) : 0;
 
   const statsData = [
-    { title: 'Interview Score', value: avgScore > 80 ? 'A+' : avgScore > 60 ? 'B' : 'C', icon: <Target size={24} />, delay: 0.1 },
-    { title: 'Total Reports', value: reports.length.toString(), icon: <Layers size={24} />, delay: 0.2 },
-    { title: 'Last Session', value: reports.length > 0 ? new Date(reports[0].createdAt).toLocaleDateString() : 'N/A', icon: <Calendar size={24} />, delay: 0.3 }
+    { title: 'Interview Score', value: avgScore >= 80 ? 'A+' : avgScore >= 60 ? 'B' : avgScore > 0 ? 'C' : 'N/A', icon: <Target size={24} />, delay: 0.1 },
+    { title: 'Total Simulations', value: totalSimulations.toString(), icon: <Layers size={24} />, delay: 0.2 },
+    { title: 'Last Activity', value: combinedHistory.length > 0 ? new Date(combinedHistory[0].createdAt).toLocaleDateString() : 'N/A', icon: <Calendar size={24} />, delay: 0.3 }
   ];
 
   return (
@@ -110,17 +141,17 @@ const DashboardPage = () => {
                     The Archive
                   </span>
                   <h2 className="font-space text-3xl font-bold tracking-tight text-white mb-2">
-                    Report History
+                    Activity History
                   </h2>
                   <p className="font-inter text-[#94a3b8] text-sm max-w-xl">
-                    Review past performance metrics, AI transcriptions, and behavioral growth patterns from your previous neural simulations.
+                    Review past performance metrics and growth patterns from your neural simulations and AI analysis sessions.
                   </p>
                 </div>
 
                  <div className="flex gap-4 w-full sm:w-auto overflow-x-auto pb-2 no-scrollbar">
                    <div className="glass-surface-low rounded-[1.2rem] px-5 py-3 border border-[rgba(255,255,255,0.05)] min-w-max">
                       <span className="text-[#94a3b8] text-xs uppercase tracking-wider font-semibold mr-3">Simulations</span>
-                      <span className="font-space font-bold text-xl text-white">{reports.length}</span>
+                      <span className="font-space font-bold text-xl text-white">{totalSimulations}</span>
                    </div>
                    <div className="glass-surface-low rounded-[1.2rem] px-5 py-3 border border-[rgba(255,255,255,0.05)] min-w-max">
                       <span className="text-[#c0c1ff] text-xs uppercase tracking-wider font-semibold mr-3">Avg Score</span>
@@ -130,25 +161,30 @@ const DashboardPage = () => {
               </div>
 
                <div className="flex flex-col gap-4 relative">
-                {/* Decorative Timeline Line */}
                 <div className="absolute left-8 top-10 bottom-10 w-[2px] bg-[rgba(255,255,255,0.02)] hidden md:block" />
                 
-                {filteredReports.length > 0 ? (
-                  filteredReports.map((report, idx) => (
-                    <div key={report._id} className="relative">
+                {loading ? (
+                  <div className="text-center py-20">
+                    <div className="spinner mx-auto mb-4" style={{ width: 32, height: 32 }} />
+                    <p className="text-[#94a3b8] text-sm">Synchronizing with neural database...</p>
+                  </div>
+                ) : filteredHistory.length > 0 ? (
+                  filteredHistory.map((item, idx) => (
+                    <div key={item._id} className="relative">
                       <ReportCard 
-                        role={report.title}
-                        score={report.matchScore}
-                        date={new Date(report.createdAt).toLocaleDateString()}
-                        reportId={report._id}
+                        role={item.title || item.role}
+                        score={item.matchScore}
+                        date={new Date(item.createdAt).toLocaleDateString()}
+                        reportId={item._id}
                         index={idx} 
+                        type={item.type}
                       />
                     </div>
                   ))
                 ) : (
                   <div className="text-center py-20 glass-surface rounded-[2rem] border border-[rgba(255,255,255,0.05)]">
                     <p className="text-[#94a3b8] font-inter">
-                      {searchQuery ? "No matching reports found for your query." : "No reports generated yet. Start your first AI analysis!"}
+                      {searchQuery ? "No matching data found for your query." : "No activities recorded yet. Start your first session!"}
                     </p>
                   </div>
                 )}

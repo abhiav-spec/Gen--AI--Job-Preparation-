@@ -358,4 +358,44 @@ const resendOtp = async (req, res) => {
     }
 };
 
-export { registerUser, getUserProfile, refreshToken, logout, logoutAll, login, verifyEmail, resendOtp };
+const updateUserProfile = async (req, res) => {
+    const token = req.headers['authorization']?.split(' ')[1];
+    if (!token) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const { username, profilePicture } = req.body;
+        
+        const updateData = {};
+        if (username) updateData.username = username;
+        if (profilePicture) updateData.profilePicture = profilePicture;
+
+        const user = await User.findByIdAndUpdate(
+            decoded.id, 
+            { $set: updateData }, 
+            { new: true, runValidators: true }
+        );
+
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        return res.status(200).json({ 
+            message: 'Profile updated successfully',
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email,
+                profilePicture: user.profilePicture,
+                verified: user.verified
+            }
+        });
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+}
+
+export { registerUser, getUserProfile, refreshToken, logout, logoutAll, login, verifyEmail, resendOtp, updateUserProfile };

@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import { generateInterviewReport } from './services/ai.service.js';
 import interviewRouter from './routes/interview.routes.js';
+import mockInterviewRouter from './routes/mockInterview.routes.js';
 
 
 const app = express();
@@ -43,6 +44,7 @@ app.use(express.json());
 app.use(morgan('dev'));
 app.use('/api/auth', authRoutes);
 app.use('/api/interview', interviewRouter);
+app.use('/api/mock-interview', mockInterviewRouter);
 
 app.post('/api/generate-interview-report', async (req, res) => {
     try {

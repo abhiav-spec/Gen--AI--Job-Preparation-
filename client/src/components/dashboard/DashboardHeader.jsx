@@ -1,10 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Bell, Search, Hexagon } from 'lucide-react';
+import { Bell, Search, Hexagon, User } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const DashboardHeader = ({ onSearch }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   
   return (
     <motion.header
@@ -15,7 +17,7 @@ const DashboardHeader = ({ onSearch }) => {
     >
       <div className="flex flex-col gap-1">
         <h1 className="font-space text-3xl sm:text-4xl font-semibold text-white tracking-tight flex items-center gap-3">
-          Welcome back, {user?.name ? user.name.split(' ')[0] : 'Commander'} 
+          Welcome back, {user?.username ? user.username.split(' ')[0] : 'Commander'} 
           <span className="text-[#5de6ff] animate-pulse">
             <Hexagon size={24} className="fill-[rgba(93,230,255,0.2)]" />
           </span>
@@ -32,16 +34,31 @@ const DashboardHeader = ({ onSearch }) => {
           <input 
             type="text" 
             placeholder="Search reports..." 
-            onChange={(e) => onSearch(e.target.value)}
+            onChange={(e) => onSearch?.(e.target.value)}
             className="bg-transparent text-sm w-full outline-none text-white placeholder-[rgba(192,193,255,0.5)] font-inter"
           />
         </div>
 
-        {/* Notifications */}
-        <button className="relative shrink-0 w-12 h-12 flex items-center justify-center rounded-full glass-surface border border-[rgba(255,255,255,0.1)] transition-transform hover:scale-105 ai-glow-shadow">
-          <Bell size={20} className="text-[#c0c1ff]" />
-          <span className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full bg-[#5de6ff] border-2 border-[#121223] shadow-[0_0_10px_#5de6ff]"></span>
-        </button>
+        {/* Notifications & Profile */}
+        <div className="flex items-center gap-3">
+          <button className="relative shrink-0 w-12 h-12 flex items-center justify-center rounded-full glass-surface border border-[rgba(255,255,255,0.1)] transition-transform hover:scale-105 ai-glow-shadow">
+            <Bell size={20} className="text-[#c0c1ff]" />
+            <span className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full bg-[#5de6ff] border-2 border-[#121223] shadow-[0_0_10px_#5de6ff]"></span>
+          </button>
+          
+          <button 
+            onClick={() => navigate('/dashboard/settings')}
+            className="group relative shrink-0 w-12 h-12 flex items-center justify-center rounded-2xl glass-surface-low border border-[rgba(93,230,255,0.15)] transition-all hover:border-secondary hover:shadow-[0_0_15px_rgba(93,230,255,0.2)]"
+          >
+            <div className="w-8 h-8 rounded-xl ai-gradient-bg flex items-center justify-center text-[#0c0c1d] font-space font-bold text-xs uppercase">
+              {user?.username ? user.username[0] : <User size={16} />}
+            </div>
+            {/* Tooltip hint */}
+            <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 px-2 py-1 rounded bg-[#121223] border border-white/10 text-[10px] text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+              Account Settings
+            </div>
+          </button>
+        </div>
       </div>
     </motion.header>
   );

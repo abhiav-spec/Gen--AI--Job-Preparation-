@@ -61,4 +61,7 @@ export const logoutUser = () =>
 export const logoutAllDevices = () =>
   api.post('/logout-all');
 
+export const updateUserProfile = (data) =>
+  api.patch('/profile', data);
+
 export default api;
