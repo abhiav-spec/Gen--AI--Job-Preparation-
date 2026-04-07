@@ -1,362 +1,148 @@
-# AI Interview Preparation Backend (Server)
+# HireStack AI Backend 🚀
 
-This folder contains the backend API for the AI interview preparation platform.
+The core intelligence engine for the HireStack career platform. This server handles neural simulations, AI interview diagnostics, automated report generation, and secure session management.
 
-The server handles:
-- Authentication and session management
-- Email OTP verification
-- AI-generated interview report creation
-- Report history and report download as PDF
+## 🛠 Tech Stack
 
-## What This Website Gives to Users
+- **Runtime**: Node.js
+- **Framework**: Express.js
+- **Database**: MongoDB (via Mongoose)
+- **AI Integration**: Google Gemini API & Groq SDK
+- **Authentication**: JWT (JSON Web Tokens) with Secure HTTP-Only Cookies
+- **Email**: Nodemailer (supporting SMTP and OAuth2)
+- **File Processing**: PDF-Parse & Multer
 
-From the backend perspective, users get these capabilities:
-- Sign up and sign in with secure token-based auth
-- Verify account email using OTP
-- Request OTP resend for unverified accounts
-- Keep login sessions across devices using refresh-token cookies
-- Generate AI interview preparation reports from:
-	- resume content
-	- self-description
-	- job description
-- View one report
-- View all past reports
-- Download an interview report as PDF
+## 📦 Key Features
 
-## Tech Stack
+### 1. Neural Simulation (Mock Interview)
+- Real-time adaptive questioning based on user performance.
+- Vision-based behavior tracking (face detection, emotional analysis).
+- Logic for technical and behavioral evaluation using large language models.
 
-- Node.js
-- Express
-- MongoDB + Mongoose
-- JWT (access + refresh token pattern)
-- Cookie-based refresh token storage
-- Nodemailer (Gmail OAuth2) for OTP email
-- Multer for resume upload
-- pdf-parse for extracting text from uploaded PDF resume
-- Google GenAI SDK for interview analysis and resume/report content generation
-- Zod + JSON schema for model-constrained AI output
-- Puppeteer for PDF generation
+### 2. AI Diagnostics (Report Generator)
+- Automated parsing of uploaded resumes.
+- Generation of comprehensive career intelligence reports.
+- Predictive performance analytics and skill trajectory mapping.
 
-## Project Structure
+### 3. Identity & Security
+- OTP-based email verification for high-security registration.
+- Persistent session management with encrypted JWT.
+- Device-wide logout (Neural Core Shutdown).
 
-```text
-.
-|____server.js
-|____README.md
-|____package-lock.json
-|____package.json
-|____src
-| |____middleware
-| | |____file.middleware.js
-| | |____auth.middleware.js
-| |____config
-| | |____database.js
-| | |____config.js
-| |____utils
-| | |____otp.util.js
-| |____models
-| | |____otp.model.js
-| | |____interviewReport.model.js
-| | |____user.model.js
-| | |____session.model.js
-| |____controllers
+### 4. Notification Engine
+- Real-time system alerts and interview status updates.
+- Persistent notification history stored in MongoDB.
 
-| | |____interview.controller.js
-| | |____auth.controller.js
-| |____routes
-| | |____interview.routes.js
-| |____app.js
-| |____services
-| | |____email.services.js
-| | |____ai.service.js
+---
+
+## 🚀 Getting Started
+
+### 1. Prerequisites
+- **Node.js** (v18+ recommended)
+- **MongoDB** instance (Local or Atlas)
+- **GMAIL App Password** (for the email service)
+
+### 2. Environment Setup
+Create a `.env` file in the root directory (or parent of Server) with the following:
+
+```env
+# Server Config
+PORT=3000
+MONGODB_URI=your_mongodb_connection_string
+JWT_SECRET=your_jwt_signing_secret
+
+# Email Config (Required for Registration)
+GOOGLE_USER=your_email@gmail.com
+GMAIL_PASS=your_gmail_app_password
+
+# AI API Keys
+GOOGLE_GENAI_API_KEY=your_gemini_api_key
+GROQ_API_KEY=your_groq_api_key
 ```
 
-### Key Files:
-
-- `server.js`: Bootstraps database and HTTP server
-- `src/app.js`: Express app, middleware, CORS, root route, route mounting
-- `src/config/config.js`: Loads and validates environment variables
-- `src/config/database.js`: MongoDB connection
-- `src/routes/auth.route.js`: Authentication routes
-- `src/routes/interview.routes.js`: Interview/report routes
-- `src/controllers/auth.controller.js`: Auth and OTP logic
-- `src/controllers/interview.controller.js`: Interview report generation/fetch/download logic
-- `src/middleware/auth.middleware.js`: Auth guard middleware (JWT/session validation intent)
-- `src/middleware/file.middleware.js`: Multer upload config for resume file
-- `src/models/user.model.js`: User schema
-- `src/models/session.model.js`: Refresh-session schema
-- `src/models/otp.model.js`: OTP schema with TTL expiry
-- `src/models/interviewReport.model.js`: Interview report schema
-- `src/services/email.services.js`: Email service
-- `src/services/ai.service.js`: AI report generation + PDF generation
-- `src/utils/otp.util.js`: OTP generator and email template helper
-
-
-## Environment Variables
-
-Create `.env` in the `Server` folder.
-
-### Required
-
-- `MONGODB_URI` (or `MONGO_URI`)
-- `JWT_SECRET`
-- `PORT` (optional in practice; defaults to `3000`)
-
-### Required for OTP Email (Gmail OAuth2)
-
-- `GOOGLE_CLIENT_ID`
-- `GOOGLE_CLIENT_SECRET`
-- `GOOGLE_REFRESH_TOKEN`
-- `GOOGLE_USER`
-
-### Required for AI Features
-
-- `GOOGLE_GENAI_API_KEY`
-
-### Optional
-
-- `NODE_ENV` (defaults to `development`)
-
-## Installation and Run
-
-From `Server/`:
-
+### 3. Installation
 ```bash
+cd Server
 npm install
-node server.js
 ```
 
-Expected startup logs:
-- `MongoDB connected successfully`
-- `Server is running on port <PORT>`
+### 4. Running the Server
+```bash
+# Development mode (with nodemon)
+npm run dev
 
-Base URL (local):
-- `http://localhost:3000`
-
-## Authentication and Security Design
-
-- Access token:
-	- JWT sent in response body
-	- Lifetime: `15m`
-- Refresh token:
-	- JWT sent in HTTP-only cookie (`refreshToken`)
-	- Lifetime: `7d`
-	- Hash stored in `Session` collection
-- Password storage:
-	- SHA-256 hash
-- OTP verification:
-	- 6-digit OTP is generated
-	- OTP hash is stored in `Otp` collection
-	- OTP documents expire in 10 minutes (TTL index)
-
-Cookie attributes currently configured:
-- `httpOnly: true`
-- `secure: true`
-- `sameSite: 'strict'`
-
-Note:
-- In local non-HTTPS environments, `secure: true` can block cookie behavior in browsers.
-
-## CORS
-
-CORS is configured with an allowlist in `src/app.js` for local frontend ports (`5173` through `5177` on localhost/127.0.0.1) and `credentials: true`.
-
-## API Endpoints
-
-## Health
-
-1. `GET /`
-- Description: Basic API welcome route
-- Response: `Welcome to the Authentication System API`
-
-## Auth APIs (`/api/auth`)
-
-1. `POST /api/auth/register`
-- Description: Creates user, creates session, sets refresh token cookie, returns access token, generates OTP, sends verification email
-- Body:
-```json
-{
-	"username": "john",
-	"email": "john@example.com",
-	"password": "Pass@1234"
-}
+# Production mode
+npm start
 ```
-- Success: `201`
 
-2. `POST /api/auth/login`
-- Description: Logs in verified user, creates session, rotates refresh cookie, returns access token
-- Body:
-```json
-{
-	"email": "john@example.com",
-	"password": "Pass@1234"
-}
-```
-- Success: `200`
-- Note: Returns error when user email is not verified
+---
 
-3. `POST /api/auth/verify-email`
-- Description: Verifies user email using 6-digit OTP
-- Body:
-```json
-{
-	"email": "john@example.com",
-	"otp": "123456"
-}
-```
-- Success: `200`
+## 📡 API Endpoints Summary
 
-4. `POST /api/auth/resend-otp`
-- Description: Regenerates and resends OTP for unverified user
-- Body:
-```json
-{
-	"email": "john@example.com"
-}
-```
-- Success: `200`
+### Authentication (`/api/auth`)
+- `POST /register`: Create a new identity (triggers OTP).
+- `POST /verify`: Verify email using the 6-digit code.
+- `POST /login`: Establish a neural link session.
+- `POST /logout-all`: Terminate all active sessions.
 
-5. `POST /api/auth/refresh-token`
-- Description: Validates refresh cookie, rotates refresh token, returns new access token
-- Auth: Requires `refreshToken` cookie
-- Success: `200`
+### Mock Interview (`/api/mock-interview`)
+- `POST /start`: Initialize a new simulation session.
+- `POST /submit-answer`: Submit a response for AI evaluation.
+- `POST /end`: Finalize session and trigger report generation.
+- `GET /sessions`: Retrieve past simulation history.
 
-6. `GET /api/auth/profile`
-- Description: Returns current user profile
-- Auth: Bearer token in `Authorization` header
-- Header example:
+### Diagnostics (`/api/interview`)
+- `POST /upload-resume`: Process PDF files for parsing.
+- `POST /generate-report`: Execute full AI analysis on background/resume/JD.
+
+### Notifications (`/api/notifications`)
+- `GET /all`: Fetch recent system alerts.
+- `PATCH /:id/read`: Acknowledge a specific notification.
+
+---
+
+## 📂 Detailed Folder Architecture
+
 ```text
-Authorization: Bearer <access_token>
-```
-- Success: `200`
-
-7. `POST /api/auth/logout`
-- Description: Revokes current session and clears refresh cookie
-- Auth: Requires `refreshToken` cookie
-- Success: `200`
-
-8. `POST /api/auth/logout-all`
-- Description: Revokes all sessions for user and clears refresh cookie
-- Auth: Requires `refreshToken` cookie
-- Success: `200`
-
-## Interview APIs (`/api/interview`)
-
-1. `POST /api/interview/generate-interview-report`
-- Description: Uploads resume PDF, extracts resume text, generates AI interview report, stores report in DB
-- Auth: Protected route
-- Content-Type: `multipart/form-data`
-- Form fields:
-	- `resume`: PDF file
-	- `selfdescription`: text
-	- `jobdescription`: text
-- Success: `200`
-
-2. `GET /api/interview/report/:reportId`
-- Description: Fetch one saved interview report for current user
-- Auth: Protected route
-- Success: `200`
-
-3. `GET /api/interview/reports/:userId`
-- Description: Fetch all interview reports for current user (latest first)
-- Auth: Protected route
-- Success: `200`
-
-4. `GET /api/interview/download-report/:reportId`
-- Description: Generates and downloads PDF from report data
-- Auth: Protected route
-- Response: `application/pdf`
-- Success: `200`
-
-5. `GET /api/interview/generate-resume-pdf`
-- Description: Route exists in router but has no controller attached yet (incomplete)
-
-## Additional AI Route in `app.js`
-
-1. `POST /api/generate-interview-report`
-- Description: Direct JSON-based interview report generation (without file upload route)
-- Body requires:
-	- `resume`
-	- `selfdescription`
-	- `jobdescription`
-- Success: `200`
-
-## Interview Report Output Shape
-
-Generated report includes:
-- `title`
-- `matchScore`
-- `technicalQuestions[]`
-	- `question`
-	- `intention`
-	- `answer`
-- `behavioralQuestions[]`
-	- `question`
-	- `intention`
-	- `answer`
-- `skillGaps[]`
-	- `skill`
-	- `severity`
-- `preparationPlan[]`
-	- `day`
-	- `focus`
-	- `tasks[]`
-
-## Common Error Responses
-
-- `400`: Validation issues, invalid credentials/OTP, missing required fields, session issues
-- `401`: Unauthorized/missing token/cookie on protected routes
-- `404`: User/report not found
-- `500`: Internal server error
-
-## Functional Notes and Current Implementation Status
-
-This section clarifies current backend behavior so documentation stays honest:
-
-- Auth and OTP flow is implemented and usable.
-- Resume upload + AI interview report flow is implemented in interview controller.
-- Report download as PDF is implemented via Puppeteer in AI service.
-- There is mixed module syntax (ESM + CommonJS) across files.
-- Some interview route/controller symbol names are inconsistent (typos and export name mismatches).
-- `auth.middleware.js` currently references variables with naming mismatch (`Acess` vs `token`) and cookie key mismatch compared to auth controller cookie usage.
-- `file.middleware.js` has `stroage` typo and exports shape mismatch with current route import usage.
-- `GET /api/interview/generate-resume-pdf` is declared but not implemented.
-
-If you want, these issues can be fixed in a follow-up cleanup so all documented APIs are fully stable.
-
-## Quick cURL Examples
-
-Register:
-```bash
-curl -X POST http://localhost:3000/api/auth/register \
-	-H "Content-Type: application/json" \
-	-d '{"username":"john","email":"john@example.com","password":"Pass@1234"}'
+Server/
+├── server.js               # Entry point - starts the express server and connects to DB
+├── .env                    # (External) Environment configuration
+├── src/
+│   ├── app.js             # Initializing middleware (CORS, Morgan, Cookies) and root routes
+│   │
+│   ├── config/            # Core System Configurations
+│   │   ├── config.js      # Central environment variable loader
+│   │   └── database.js    # MongoDB connection pool and mongoose setup
+│   │
+│   ├── controllers/       # Feature Controllers (Request Logic)
+│   │   ├── auth.controller.js           # Identity & Authentication logic
+│   │   ├── interview.controller.js      # Resume parsing & Report generation 
+│   │   ├── mockInterview.controller.js  # Real-time simulation management
+│   │   └── notification.controller.js   # Dynamic alert handling
+│   │
+│   ├── models/            # Data Schemas (MongoDB/Mongoose)
+│   │   ├── user.model.js                # Identity schema
+│   │   ├── interviewReport.model.js     # Career diagnostic schema
+│   │   ├── mockInterview.model.js       # Adaptive session tracking
+│   │   └── notification.model.js        # System logger schema
+│   │
+│   ├── routes/            # REST API Endpoint Routing
+│   │   ├── auth.route.js                # /api/auth
+│   │   ├── interview.routes.js          # /api/interview
+│   │   ├── mockInterview.routes.js      # /api/mock-interview
+│   │   └── notification.routes.js       # /api/notifications
+│   │
+│   ├── services/          # Business Logic & External APIs
+│   │   ├── ai.service.js                # Gemini/Groq neural execution
+│   │   ├── email.services.js            # Nodemailer & SMTP orchestration
+│   │   └── mockInterview.service.js     # State management for simulations
+│   │
+│   └── middleware/        # Request Context & Validation
+│       ├── auth.middleware.js           # JWT verification & session guarding
+│       └── file.middleware.js           # Multer configuration for secure uploads
+│   
+└── package.json           # Node.js dependencies & scripts
 ```
 
-Login:
-```bash
-curl -X POST http://localhost:3000/api/auth/login \
-	-H "Content-Type: application/json" \
-	-d '{"email":"john@example.com","password":"Pass@1234"}'
-```
-
-Generate interview report with resume upload:
-```bash
-curl -X POST http://localhost:3000/api/interview/generate-interview-report \
-	-H "Authorization: Bearer <access_token>" \
-	-F "resume=@/path/to/resume.pdf" \
-	-F "selfdescription=I am a backend developer with 2 years of experience" \
-	-F "jobdescription=Node.js developer role requiring API and MongoDB skills"
-```
-
-Download report PDF:
-```bash
-curl -X GET http://localhost:3000/api/interview/download-report/<reportId> \
-	-H "Authorization: Bearer <access_token>" \
-	--output interview_report.pdf
-```
-
-## Development Notes
-
-- In development, OTP may be logged in server console.
-- If email OAuth config is missing in development, OTP flows can still be tested using fallback response fields.
+## 📜 License
+ISC License. Built with ⚡ by the HireStack Engineering Team.
