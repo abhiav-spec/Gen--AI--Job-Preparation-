@@ -117,7 +117,7 @@ Do NOT include any text outside the JSON object.`;
 
 // ─── Generate Final Report ───────────────────────────────────────────────────
 
-async function generateFinalReport({ role, difficulty, jobDescription, qaHistory }) {
+async function generateFinalReport({ role, difficulty, jobDescription, qaHistory, behaviorMetrics }) {
     const historyContext = buildHistoryContext(qaHistory);
 
     const systemPrompt = `You are an advanced AI Interviewer. The mock interview has just ended.
@@ -130,7 +130,13 @@ CONTEXT:
 COMPLETE INTERVIEW TRANSCRIPT:
 ${historyContext}
 
-Generate a detailed final interview evaluation report. Analyze the candidate's overall performance across all questions.
+BEHAVIORAL PERFORMANCE METRICS (Vision AI):
+- Total Face Missing Duration: ${behaviorMetrics?.faceMissingDuration || 0} seconds
+- Face Disappeared Count: ${behaviorMetrics?.faceMissingCount || 0} times
+- Average AI Confidence in Candidate: ${behaviorMetrics?.averageConfidence || 0}%
+- Dominant Emotion Detected: ${behaviorMetrics?.dominantEmotion || 'neutral'}
+
+Generate a detailed final interview evaluation report. Analyze the candidate's overall performance across all questions, factoring in their physical presence and behavior metrics.
 
 You MUST respond with ONLY a valid JSON object in this exact format:
 {

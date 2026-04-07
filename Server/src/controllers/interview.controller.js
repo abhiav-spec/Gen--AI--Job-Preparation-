@@ -1,6 +1,7 @@
 import { PDFParse as pdfparse } from 'pdf-parse';
 import { generateInterviewReport, generateResumePdf, generatePdfFromHtml } from '../services/ai.service.js';
 import interiviewReportModel from '../models/interviewReport.model.js';
+import { createNotification } from './notification.controller.js';
 
 function normalizeSkillGap(gap) {
     if (!gap || typeof gap !== 'object') {
@@ -127,6 +128,20 @@ async function interviewcontroller(req, res) {
             ...normalizedReport
         });
         await interviewReport.save();
+
+        // Create notification
+        try {
+            await createNotification({
+                userId: req.user.id,
+                type: 'AI_REPORT',
+                title: 'Resume Report Complete!',
+                message: `AI has generated your professional optimization report.`,
+                link: `/dashboard/view-report/${interviewReport._id}`
+            });
+        } catch (notifErr) {
+            console.error('Failed to create notification:', notifErr);
+        }
+
         return res.status(200).json({
             message: 'Interview report generated successfully',
             success: true,

@@ -6,6 +6,7 @@ import cors from 'cors';
 import { generateInterviewReport } from './services/ai.service.js';
 import interviewRouter from './routes/interview.routes.js';
 import mockInterviewRouter from './routes/mockInterview.routes.js';
+import notificationRouter from './routes/notification.routes.js';
 
 
 const app = express();
@@ -45,6 +46,7 @@ app.use(morgan('dev'));
 app.use('/api/auth', authRoutes);
 app.use('/api/interview', interviewRouter);
 app.use('/api/mock-interview', mockInterviewRouter);
+app.use('/api/notifications', notificationRouter);
 
 app.post('/api/generate-interview-report', async (req, res) => {
     try {

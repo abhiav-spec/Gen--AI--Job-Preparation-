@@ -62,6 +62,39 @@ const MockInterviewPage = () => {
   });
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [behaviorFlags, setBehaviorFlags] = useState([]);
+  
+  // Ref for accumulating metrics without triggering re-renders (crucial for timer stability)
+  const behaviorMetricsRef = useRef({
+    faceMissingDuration: 0,
+    faceMissingCount: 0,
+    totalDetections: 0,
+    confidenceSum: 0,
+    emotions: {},
+    lastFaceDetected: true
+  });
+
+  const handleStatusUpdate = useCallback((status) => {
+    setVisionStatus(prev => ({ ...prev, ...status }));
+    
+    // Accumulate metrics in Ref
+    const m = behaviorMetricsRef.current;
+    m.totalDetections += 1;
+    m.confidenceSum += status.confidenceScore;
+    
+    // Track face missing stats
+    if (!status.faceDetected) {
+        m.faceMissingDuration += 0.5; // Detection loop runs every 500ms
+        if (m.lastFaceDetected !== false) {
+           m.faceMissingCount += 1;
+        }
+    }
+    
+    // Track emotions
+    const emo = status.emotion || 'unknown';
+    m.emotions[emo] = (m.emotions[emo] || 0) + 1;
+    
+    m.lastFaceDetected = status.faceDetected;
+  }, []);
 
   // Auto-speak AI messages & restart listening
   useEffect(() => {
@@ -228,9 +261,23 @@ const MockInterviewPage = () => {
         (async () => {
             try {
                 console.log('[MockInterview] Ending interview session:', sessionId, 'Reason:', terminationReason);
+                
+                const m = behaviorMetricsRef.current;
+                const metrics = {
+                    faceMissingDuration: Math.round(m.faceMissingDuration),
+                    faceMissingCount: m.faceMissingCount,
+                    averageConfidence: m.totalDetections > 0 
+                          ? Math.round(m.confidenceSum / m.totalDetections) 
+                          : 0,
+                    dominantEmotion: Object.keys(m.emotions).length > 0
+                          ? Object.keys(m.emotions).reduce((a, b) => m.emotions[a] > m.emotions[b] ? a : b)
+                          : 'neutral'
+                };
+
                 const res = await endMockInterview(sessionId, pendingAnswer, {
                     behaviorReport: {
                         ...visionStatus,
+                        metrics,
                         flags: behaviorFlags,
                         terminated: isTerminated,
                         reason: terminationReason
@@ -519,7 +566,7 @@ const MockInterviewPage = () => {
                     <VideoMonitor 
                        isActive={isCameraOn && !interviewEnded && !isEnding}
                        isInterviewing={!interviewEnded && !isEnding}
-                       onStatusUpdate={(status) => setVisionStatus(prev => ({ ...prev, ...status }))}
+                       onStatusUpdate={handleStatusUpdate}
                        onAutoEnd={(reason) => handleEndInterview(reason)}
                        onBehaviorLogged={(flag) => setBehaviorFlags(prev => [...prev, flag])}
                     />

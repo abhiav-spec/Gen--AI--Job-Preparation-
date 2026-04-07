@@ -132,7 +132,7 @@ const Sidebar = () => {
             </div>
             <div className="flex flex-col text-left">
               <span className="text-sm font-semibold text-white">{user?.username || 'User'}</span>
-              <span className="text-[10px] text-[#c0c1ff]">Pro Member</span>
+              <span className="text-[10px] text-[#c0c1ff]">Standard Member</span>
             </div>
           </div>
         </div>

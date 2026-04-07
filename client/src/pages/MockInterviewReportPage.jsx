@@ -5,7 +5,8 @@ import {
   Trophy, Target, MessageSquare, ShieldCheck,
   TrendingUp, TrendingDown, AlertTriangle, FileText,
   ArrowLeft, BrainCircuit, BookOpen, Briefcase,
-  ChevronDown, ChevronUp, Bot, User, Sparkles, Star
+  ChevronDown, ChevronUp, Bot, User, Sparkles, Star,
+  Activity, Zap, Smile
 } from 'lucide-react';
 import Sidebar from '../components/dashboard/Sidebar';
 import { getMockSession, deleteMockInterview } from '../api/mockInterview.api';
@@ -109,6 +110,7 @@ const MockInterviewReportPage = () => {
   const [loading, setLoading] = useState(!location.state?.report);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState('');
+  const [behaviorMetrics, setBehaviorMetrics] = useState(null);
 
   useEffect(() => {
     if (!report) {
@@ -126,6 +128,7 @@ const MockInterviewReportPage = () => {
         setQaHistory(session.qaHistory || []);
         setRole(session.role);
         setDifficulty(session.difficulty);
+        setBehaviorMetrics(session.behaviorMetrics);
       }
     } catch (err) {
       console.error('Failed to fetch session:', err);
@@ -398,6 +401,54 @@ const MockInterviewReportPage = () => {
                   ))}
                 </div>
               </SectionCard>
+              {/* Neural Vision Report */}
+              {behaviorMetrics && (
+                <SectionCard
+                  title="Neural Vision Report"
+                  icon={<ShieldCheck size={16} className="text-[#0c0c1d]" />}
+                  delay={1.1}
+                >
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div className="glass-surface-low rounded-2xl p-5 border border-white/5">
+                      <span className="text-[10px] font-space font-bold text-[#94a3b8] uppercase tracking-widest block mb-1">Face Presence</span>
+                      <div className="flex items-center gap-2">
+                        <Activity size={14} className={behaviorMetrics.faceMissingDuration > 10 ? 'text-red-400' : 'text-green-400'} />
+                        <span className="text-sm font-space font-bold text-white">
+                          {behaviorMetrics.faceMissingDuration === 0 ? 'Perfect' : `${behaviorMetrics.faceMissingDuration}s out of range`}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="glass-surface-low rounded-2xl p-5 border border-white/5">
+                      <span className="text-[10px] font-space font-bold text-[#94a3b8] uppercase tracking-widest block mb-1">Stability</span>
+                      <div className="flex items-center gap-2">
+                        <TrendingDown size={14} className={behaviorMetrics.faceMissingCount > 2 ? 'text-red-400' : 'text-green-400'} />
+                        <span className="text-sm font-space font-bold text-white">
+                          {behaviorMetrics.faceMissingCount === 0 ? 'Ideal' : `${behaviorMetrics.faceMissingCount} disappearing acts`}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="glass-surface-low rounded-2xl p-5 border border-white/5">
+                      <span className="text-[10px] font-space font-bold text-[#94a3b8] uppercase tracking-widest block mb-1">Avg Confidence</span>
+                      <div className="flex items-center gap-2">
+                        <Zap size={14} className="text-[#f59e0b]" />
+                        <span className="text-sm font-space font-bold text-white">{behaviorMetrics.averageConfidence}%</span>
+                      </div>
+                    </div>
+                    <div className="glass-surface-low rounded-2xl p-5 border border-white/5">
+                      <span className="text-[10px] font-space font-bold text-[#94a3b8] uppercase tracking-widest block mb-1">Dominant Mood</span>
+                      <div className="flex items-center gap-2">
+                        <Smile size={14} className="text-[#5de6ff]" />
+                        <span className="text-sm font-space font-bold text-white capitalize">{behaviorMetrics.dominantEmotion}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-[#5de6ff]/5 border border-[#5de6ff]/10">
+                    <p className="text-xs text-[#94a3b8] leading-relaxed italic">
+                      "Vision AI observed a {behaviorMetrics.dominantEmotion} demeanor throughout the session. Total frame presence was {behaviorMetrics.faceMissingDuration > 0 ? `disrupted for ${behaviorMetrics.faceMissingDuration} seconds` : 'consistent'}, which significantly impacts the perceived confidence score."
+                    </p>
+                  </div>
+                </SectionCard>
+              )}
             </div>
 
             {/* Action Buttons */}

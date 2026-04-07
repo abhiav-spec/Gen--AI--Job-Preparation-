@@ -432,7 +432,7 @@ const MockInterviewSetupPage = () => {
                 <div className="glass-surface-low rounded-[2rem] border border-[rgba(255,255,255,0.05)] p-8">
                   <h3 className="font-space font-bold text-white text-base mb-4 flex items-center gap-2">
                     <Sparkles size={18} className="text-[#c0c1ff]" />
-                    Pro Tips
+                    Practice Tips
                   </h3>
                   <ul className="space-y-3 text-xs text-[#94a3b8] leading-relaxed">
                     <li className="flex gap-2">

@@ -63,6 +63,12 @@ const mockInterviewSchema = new mongoose.Schema({
     finalReport: finalReportSchema,
     startedAt: { type: Date, default: Date.now },
     endedAt: { type: Date },
+    behaviorMetrics: {
+        faceMissingDuration: { type: Number, default: 0 }, // cumulative seconds
+        faceMissingCount: { type: Number, default: 0 },
+        averageConfidence: { type: Number, default: 0 },
+        dominantEmotion: { type: String, default: 'neutral' },
+    },
 }, { timestamps: true });
 
 export default mongoose.model('MockInterview', mockInterviewSchema);

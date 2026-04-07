@@ -10,7 +10,7 @@ const InterviewStartCard = () => {
       initial={{ scale: 0.95, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ duration: 1, ease: "easeOut" }}
-      className="relative overflow-hidden glass-surface rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-10 flex flex-col justify-between border border-[rgba(93,230,255,0.15)] shadow-[0_40px_100px_rgba(0,0,0,0.4),0_0_80px_rgba(93,230,255,0.05)] min-h-[340px] sm:min-h-[380px] group"
+      className="relative overflow-hidden glass-surface rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-10 flex flex-col justify-between border border-[rgba(93,230,255,0.15)] shadow-[0_40px_100px_rgba(0,0,0,0.4),0_0_80px_rgba(93,230,255,0.05)] min-h-[340px] sm:min-h-[380px] group pb-12 sm:pb-16"
     >
       {/* Animated Deep Space Background elements */}
       <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[radial-gradient(circle,rgba(93,230,255,0.1)_0%,transparent_60%)] -translate-x-[10%] -translate-y-[20%] opacity-50 blur-xl mix-blend-screen" />
@@ -33,18 +33,28 @@ const InterviewStartCard = () => {
         </p>
       </div>
 
-      <div className="relative z-10 mt-8 sm:mt-10">
+      <div className="relative z-10 mt-8 sm:mt-10 flex flex-col sm:flex-row flex-wrap gap-4 sm:gap-6">
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => navigate('/dashboard/mock-interview/setup')}
+          className="group relative flex items-center justify-between px-6 sm:px-8 py-3.5 sm:py-4 bg-[#0c0c1d] text-[#5de6ff] border border-[#5de6ff]/30 rounded-xl sm:rounded-2xl font-inter font-bold text-sm sm:text-base overflow-hidden hover:bg-[#5de6ff]/10 hover:border-[#5de6ff]/60 transition-all duration-300 shadow-[0_0_20px_rgba(93,230,255,0.1)]"
+        >
+          <span className="relative z-10 font-space tracking-wider uppercase text-xs">Mock Interview</span>
+          <ChevronRight className="ml-4 opacity-70 group-hover:opacity-100 transition-opacity relative z-10" size={18} />
+        </motion.button>
+
         <motion.button
           whileHover={{ scale: 1.02, textShadow: "0 0 8px rgba(255,255,255,0.5)" }}
           whileTap={{ scale: 0.98 }}
           onClick={() => navigate('/dashboard/report-generator')}
-          className="group relative flex items-center justify-between w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 bg-[linear-gradient(135deg,#c0c1ff_0%,#5de6ff_100%)] text-[#0c0c1d] rounded-xl sm:rounded-2xl font-inter font-bold text-base sm:text-lg overflow-hidden outline-none border-none ai-button-glow shadow-[0_0_30px_rgba(93,230,255,0.4)] transition-all duration-300 transform-gpu"
+          className="group relative flex items-center justify-between px-6 sm:px-8 py-3.5 sm:py-4 bg-[linear-gradient(135deg,#c0c1ff_0%,#5de6ff_100%)] text-[#0c0c1d] rounded-xl sm:rounded-2xl font-inter font-bold text-sm sm:text-base overflow-hidden outline-none border-none ai-button-glow shadow-[0_0_30px_rgba(93,230,255,0.4)] transition-all duration-300 transform-gpu"
         >
           {/* Shimmer effect */}
           <div className="absolute inset-0 -translate-x-full group-hover:animate-shimmer bg-gradient-to-r from-transparent via-[rgba(255,255,255,0.4)] to-transparent" />
           
-          <span className="relative z-10">Start AI Interview</span>
-          <ChevronRight className="ml-4 opacity-70 group-hover:opacity-100 transition-opacity relative z-10" size={20} />
+          <span className="relative z-10 font-space tracking-wider uppercase text-xs">Generate Report</span>
+          <ChevronRight className="ml-4 opacity-70 group-hover:opacity-100 transition-opacity relative z-10 flex-shrink-0" size={18} />
         </motion.button>
       </div>
     </motion.div>

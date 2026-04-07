@@ -9,6 +9,10 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
+console.log('--- Env Loader ---');
+console.log('GMAIL_PASS loaded:', !!process.env.GMAIL_PASS);
+console.log('GOOGLE_USER:', process.env.GOOGLE_USER);
+
 const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI;
 const port = Number(process.env.PORT || 3000);
 const jwtSecret = process.env.JWT_SECRET;

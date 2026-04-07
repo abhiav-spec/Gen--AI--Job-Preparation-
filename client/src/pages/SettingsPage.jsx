@@ -126,8 +126,8 @@ const SettingsPage = () => {
                     <div className="flex-1 text-center sm:text-left">
                       <h3 className="font-space text-2xl font-bold text-white mb-2">{user?.username}</h3>
                       <div className="flex flex-wrap justify-center sm:justify-start gap-3">
-                        <span className="px-3 py-1 rounded-full bg-[rgba(93,230,255,0.1)] border border-[rgba(93,230,255,0.2)] text-[#5de6ff] text-[10px] font-bold uppercase tracking-widest">
-                          Pro Member
+                        <span className="px-3 py-1 rounded-full bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] text-[#94a3b8] text-[10px] font-bold uppercase tracking-widest text-[#5de6ff]">
+                          Standard Member
                         </span>
                         <span className="px-3 py-1 rounded-full bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] text-[#94a3b8] text-[10px] font-bold uppercase tracking-widest">
                           Neural ID: {user?._id?.slice(-8).toUpperCase()}

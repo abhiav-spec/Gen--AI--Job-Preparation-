@@ -45,15 +45,17 @@ import Otp from '../models/otp.model.js';
         // Send OTP email
         const emailResult = await sendEmail(user.email, 'Verify your email', `Your OTP is ${otp}`, getOtpHtml(otp));
         
-        // Log OTP to console for development (remove in production)
-        console.log(`📧 OTP for ${email}: ${otp}`);
-        
         if (!emailResult.success) {
-            console.warn(`⚠️ Email sending failed: ${emailResult.error}. OTP available in console logs.`);
+            // Delete the user from the database if email fails to send (atomic rollback)
+            await User.findByIdAndDelete(user._id);
+            return res.status(500).json({ 
+                error: 'Registration failed: Could not send verification email. Please check your credentials.',
+                details: emailResult.error
+            });
         }
 
-        const responsePayload = {
-            message: 'User registered successfully',
+        return res.status(201).json({
+            message: 'User registered successfully. Verification email sent to your inbox.',
             user: {
                 id: user._id,
                 username: user.username,
@@ -61,18 +63,8 @@ import Otp from '../models/otp.model.js';
                 verified: user.verified,
                 accessToken: accesstoken,
             },
-        };
-
-        // Development fallback: allow verification flow even if SMTP/OAuth is misconfigured.
-        if (!emailResult.success && process.env.NODE_ENV !== 'production') {
-            responsePayload.otpSent = false;
-            responsePayload.devOtp = otp;
-            responsePayload.emailError = emailResult.error;
-        } else {
-            responsePayload.otpSent = true;
-        }
-
-        return res.status(201).json(responsePayload);
+            otpSent: true
+        });
 
     } catch (error) {
         console.error('Error registering user:', error);
@@ -200,48 +192,10 @@ const logoutAll = async (req, res) => {
 const login = async (req, res) => {
     const { email, password } = req.body;
 
-    // --- MOCK FALLBACK FOR DEVELOPMENT (Handles DB Downtime) ---
-    const isMockUser = email === 'kumarabhinav6649@gmail.com' && password === '12345678';
-    
     try {
-        const user = await User.findOne({ email }).catch(err => {
-            if (isMockUser) {
-                console.warn('⚠️ DB Connection failed. Activating Neural Mock Login for authorized user.');
-                return null; // Force null to trigger mock logic below
-            }
-            throw err;
-        });
+        const user = await User.findOne({ email });
 
         if (!user) {
-            if (isMockUser) {
-                // Return a mock user object with a stable ID
-                const mockUser = {
-                    _id: '65f1a2b3c4d5e6f7a8b9c0d1', 
-                    username: 'Abhinav Mishra',
-                    email: 'kumarabhinav6649@gmail.com',
-                    verified: true
-                };
-                
-                const refreshtoken = jwt.sign({ id: mockUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-                res.cookie('refreshToken', refreshtoken, { 
-                    httpOnly: true,
-                    secure: process.env.NODE_ENV === 'production',
-                    sameSite: 'lax',
-                    maxAge: 7 * 24 * 60 * 60 * 1000
-                });
-
-                const accesstoken = jwt.sign({ id: mockUser._id, session_id: 'mock_session_id' }, process.env.JWT_SECRET, { expiresIn: '15m' });
-
-                return res.status(200).json({ 
-                    message: 'Mock Login successful (Neural Bypass)',
-                    user: {
-                        id: mockUser._id,
-                        username: mockUser.username,
-                        email: mockUser.email,
-                        accessToken: accesstoken
-                    }
-                });
-            }
             return res.status(400).json({ error: 'Invalid email or password' });
         }
 
@@ -345,12 +299,17 @@ const resendOtp = async (req, res) => {
         await Otp.create({ email, otpHash });
 
         const emailResult = await sendEmail(user.email, 'Verify your email', `Your OTP is ${otp}`, getOtpHtml(otp));
-        console.log(`📧 Resent OTP for ${email}: ${otp}`);
+        
+        if (!emailResult.success) {
+            return res.status(500).json({ 
+                error: 'Failed to resend verification email. Please check your credentials.',
+                details: emailResult.error
+            });
+        }
 
         return res.status(200).json({
-            message: 'OTP resent successfully',
-            otpSent: emailResult.success,
-            ...(process.env.NODE_ENV !== 'production' && !emailResult.success ? { devOtp: otp } : {}),
+            message: 'OTP resent successfully to your inbox.',
+            otpSent: true
         });
     } catch (error) {
         console.error('Error resending OTP:', error);

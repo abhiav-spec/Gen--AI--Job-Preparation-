@@ -4,6 +4,7 @@ import {
     evaluateAndNextQuestion,
     generateFinalReport,
 } from '../services/mockInterview.service.js';
+import { createNotification } from './notification.controller.js';
 
 // ─── Start a new mock interview session ──────────────────────────────────────
 
@@ -152,7 +153,14 @@ async function submitAnswer(req, res) {
 async function endInterview(req, res) {
     try {
         const { sessionId } = req.params;
-        const { lastAnswer } = req.body;
+        const { lastAnswer, behaviorReport } = req.body;
+
+        const metrics = behaviorReport?.metrics || {
+            faceMissingDuration: 0,
+            faceMissingCount: 0,
+            averageConfidence: 0,
+            dominantEmotion: 'neutral'
+        };
 
         const session = await MockInterview.findOne({
             _id: sessionId,
@@ -177,12 +185,24 @@ async function endInterview(req, res) {
             difficulty: session.difficulty,
             jobDescription: session.jobDescription,
             qaHistory: session.qaHistory,
+            behaviorMetrics: metrics
         });
+
+        session.behaviorMetrics = metrics;
 
         session.finalReport = report;
         session.status = 'completed';
         session.endedAt = new Date();
         await session.save();
+
+        // Create notification for the user
+        await createNotification({
+            userId: req.user.id,
+            type: 'MOCK_INTERVIEW',
+            title: 'Mock Interview Complete!',
+            message: `Your AI report for ${session.role} is ready for review.`,
+            link: `/dashboard/mock-interview/${sessionId}/report`
+        });
 
         return res.status(200).json({
             success: true,
@@ -235,7 +255,7 @@ async function getAllSessions(req, res) {
     try {
         const sessions = await MockInterview.find({ user: req.user.id })
             .sort({ createdAt: -1 })
-            .select('role difficulty duration status startedAt endedAt qaHistory finalReport.score createdAt');
+            .select('role difficulty duration status startedAt endedAt qaHistory finalReport.score behaviorMetrics createdAt');
 
         return res.status(200).json({
             success: true,

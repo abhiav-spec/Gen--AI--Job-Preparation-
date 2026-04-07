@@ -18,7 +18,6 @@ const VerifyEmail = () => {
   const { setUser } = useAuth();
   
   const email = sessionStorage.getItem('pending_verification_email');
-  const devOtp = sessionStorage.getItem('dev_otp'); // fallback when email fails
 
   useEffect(() => {
     if (!email) {
@@ -71,7 +70,6 @@ const VerifyEmail = () => {
 
       setTimeout(() => {
         sessionStorage.removeItem('pending_verification_email');
-        sessionStorage.removeItem('dev_otp');
         navigate('/login');
       }, 1500);
     } catch (err) {
@@ -105,15 +103,6 @@ const VerifyEmail = () => {
           {(error || success) && (
             <div className={error ? 'alert-error' : 'alert-success'}>
               {error || success}
-            </div>
-          )}
-
-          {/* Dev fallback: show OTP if email couldn't be sent */}
-          {devOtp && (
-            <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-3 text-center">
-              <p className="text-[10px] font-space uppercase tracking-widest text-yellow-400 font-bold mb-1">📧 Email not sent — Dev OTP</p>
-              <p className="text-2xl font-space font-bold tracking-[0.3em] text-white">{devOtp}</p>
-              <p className="text-[10px] text-yellow-400/70 mt-1">Configure Gmail OAuth to send real emails</p>
             </div>
           )}
 
