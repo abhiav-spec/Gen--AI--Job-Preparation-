@@ -252,4 +252,29 @@ async function downloadInterviewReport(req, res) {
     }
 }
 
-export { interviewcontroller, getinterviewreport, getAllInterviewReports, downloadInterviewReport, normalizeReportPayload }
+async function deleteInterviewReport(req, res) {
+    const reportId = req.params.reportId;
+
+    try {
+        const report = await interiviewReportModel.findOneAndDelete({ _id: reportId, user: req.user.id });
+        if (!report) {
+            return res.status(404).json({ error: 'Interview report not found or unauthorized' });
+        }
+        return res.status(200).json({ 
+            message: 'Interview report deleted successfully', 
+            success: true 
+        });
+    } catch (error) {
+        console.error('Error deleting interview report:', error);
+        return res.status(500).json({ error: 'Failed to delete interview report' });
+    }
+}
+
+export { 
+    interviewcontroller, 
+    getinterviewreport, 
+    getAllInterviewReports, 
+    downloadInterviewReport, 
+    deleteInterviewReport,
+    normalizeReportPayload 
+}

@@ -7,6 +7,9 @@ import {
 } from 'lucide-react';
 import Sidebar from '../components/dashboard/Sidebar';
 import { submitMockAnswer, endMockInterview, getMockSession } from '../api/mockInterview.api';
+import useSpeech from '../hooks/useSpeech';
+import VideoMonitor from '../components/interview/VideoMonitor';
+import { Camera, CameraOff, ShieldCheck, Smile, Activity, Eye, Zap } from 'lucide-react';
 
 const MockInterviewPage = () => {
   const { sessionId } = useParams();
@@ -14,6 +17,23 @@ const MockInterviewPage = () => {
   const navigate = useNavigate();
   const chatEndRef = useRef(null);
   const textareaRef = useRef(null);
+
+  // Voice Hook
+  const {
+    isListening,
+    transcript,
+    isSpeaking,
+    supported,
+    startListening,
+    stopListening,
+    speak,
+    stopSpeaking,
+    setTranscript
+  } = useSpeech();
+
+  // Settings
+  const [voiceMode, setVoiceMode] = useState(location.state?.voiceMode || false);
+  const [isMuted, setIsMuted] = useState(false);
 
   // State from navigation or fetched
   const [role, setRole] = useState(location.state?.role || '');
@@ -34,6 +54,38 @@ const MockInterviewPage = () => {
   const [timeLeft, setTimeLeft] = useState(0);
   const [timerWarning, setTimerWarning] = useState(false);
 
+  // Behavior Tracking
+  const [visionStatus, setVisionStatus] = useState({
+    faceDetected: true,
+    emotion: 'neutral',
+    confidenceScore: 0
+  });
+  const [isCameraOn, setIsCameraOn] = useState(true);
+  const [behaviorFlags, setBehaviorFlags] = useState([]);
+
+  // Auto-speak AI messages & restart listening
+  useEffect(() => {
+    if (messages.length > 0 && !isMuted) {
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg.type === 'ai' && !lastMsg.spoken) {
+        speak(lastMsg.content, () => {
+          // If voiceMode is on, start listening after AI finishes speaking
+          if (supported.recognition && voiceMode && !interviewEnded) {
+             startListening();
+          }
+        });
+        lastMsg.spoken = true; // Mark as spoken to avoid repeat on re-renders
+      }
+    }
+  }, [messages, isMuted, speak, voiceMode, supported.recognition, interviewEnded, startListening]);
+
+  // Update currentAnswer when transcript changes
+  useEffect(() => {
+    if (isListening && transcript) {
+      setCurrentAnswer(transcript);
+    }
+  }, [transcript, isListening]);
+
   // Initialize chat with first question
   useEffect(() => {
     if (location.state?.firstQuestion) {
@@ -41,15 +93,15 @@ const MockInterviewPage = () => {
         type: 'ai',
         content: location.state.firstQuestion,
         timestamp: new Date(),
+        spoken: false,
       }]);
       setQuestionCount(1);
     } else {
-      // If no state (e.g. page refresh), fetch session
       fetchSession();
     }
   }, []);
 
-  const fetchSession = async () => {
+  const fetchSession = useCallback(async () => {
     try {
       const res = await getMockSession(sessionId);
       if (res.data.success) {
@@ -67,10 +119,9 @@ const MockInterviewPage = () => {
           return;
         }
 
-        // Rebuild messages from qaHistory
         const msgs = [];
         session.qaHistory.forEach((qa) => {
-          msgs.push({ type: 'ai', content: qa.question, timestamp: qa.askedAt });
+          msgs.push({ type: 'ai', content: qa.question, timestamp: qa.askedAt, spoken: true });
           if (qa.answer) {
             msgs.push({ type: 'user', content: qa.answer, timestamp: qa.answeredAt });
           }
@@ -82,57 +133,36 @@ const MockInterviewPage = () => {
       console.error('Failed to fetch session:', err);
       setError('Failed to load interview session.');
     }
+  }, [sessionId, navigate]);
+
+  const handleToggleMic = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      stopSpeaking(); // Stop AI if user starts speaking
+      startListening();
+    }
   };
-
-  // Timer logic
-  useEffect(() => {
-    if (!startedAt || !duration) return;
-    const endTime = new Date(startedAt).getTime() + duration * 60 * 1000;
-
-    const interval = setInterval(() => {
-      const now = Date.now();
-      const remaining = Math.max(0, Math.floor((endTime - now) / 1000));
-      setTimeLeft(remaining);
-      setTimerWarning(remaining <= 120 && remaining > 0);
-
-      if (remaining <= 0 && !interviewEnded) {
-        clearInterval(interval);
-        handleEndInterview();
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [startedAt, duration, interviewEnded]);
-
-  // Format time
-  const formatTime = (seconds) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
-
-  // Auto-scroll
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
 
   // Submit answer
-  const handleSubmitAnswer = async () => {
-    if (!currentAnswer.trim() || isSubmitting || interviewEnded) return;
+  const handleSubmitAnswer = useCallback(async () => {
+    if ((!currentAnswer.trim() && !transcript.trim()) || isSubmitting || interviewEnded) return;
+    
+    if (isListening) stopListening();
+    
     setIsSubmitting(true);
     setError('');
 
-    const answerText = currentAnswer.trim();
+    const answerText = currentAnswer.trim() || transcript.trim();
     setCurrentAnswer('');
+    setTranscript('');
 
-    // Add user message immediately
     setMessages((prev) => [...prev, {
       type: 'user',
       content: answerText,
       timestamp: new Date(),
     }]);
 
-    // Add typing indicator
     setMessages((prev) => [...prev, {
       type: 'typing',
       content: '',
@@ -142,13 +172,13 @@ const MockInterviewPage = () => {
     try {
       const res = await submitMockAnswer(sessionId, answerText);
       if (res.data.success) {
-        // Remove typing indicator and add AI question
         setMessages((prev) => {
           const filtered = prev.filter((m) => m.type !== 'typing');
           return [...filtered, {
             type: 'ai',
             content: res.data.data.question,
             timestamp: new Date(),
+            spoken: false,
           }];
         });
         setQuestionCount(res.data.data.questionNumber);
@@ -161,46 +191,123 @@ const MockInterviewPage = () => {
       setIsSubmitting(false);
       textareaRef.current?.focus();
     }
-  };
+  }, [sessionId, currentAnswer, transcript, isSubmitting, interviewEnded, isListening, stopListening, setTranscript]);
 
   // End interview
-  const handleEndInterview = async () => {
+  const handleEndInterview = useCallback(async (reason) => {
+    // Note: If called from React onClick, 'reason' is an event object.
+    // If called from our internal logic, it's a string.
+    let terminationReason = 'Manual termination';
+    let isTerminated = false;
+
+    if (typeof reason === 'string') {
+        terminationReason = reason;
+        isTerminated = true;
+    }
+    
     if (isEnding || interviewEnded) return;
+    
+    // Stop all active processes immediately
+    if (isListening) stopListening();
+    if (isSpeaking) stopSpeaking();
+    
     setIsEnding(true);
     setInterviewEnded(true);
 
-    // If the last message is an AI question without an answer, pass empty
-    const lastMsg = messages[messages.length - 1];
-    const pendingAnswer = lastMsg?.type === 'ai' ? '' : undefined;
-
-    try {
-      const res = await endMockInterview(sessionId, pendingAnswer);
-      if (res.data.success) {
-        navigate(`/dashboard/mock-interview/${sessionId}/report`, {
-          state: {
-            report: res.data.data.report,
-            qaHistory: res.data.data.qaHistory,
-            role: res.data.data.role,
-            difficulty: res.data.data.difficulty,
-            duration: res.data.data.duration,
-          },
-        });
-      }
-    } catch (err) {
-      console.error('Failed to end interview:', err);
-      setError('Failed to end interview. Please try again.');
-      setIsEnding(false);
-      setInterviewEnded(false);
+    if (isTerminated) {
+       setError(`Interview Terminated: ${terminationReason}`);
     }
-  };
 
-  // Handle enter key
+    // We use a functional state update to get the latest messages without depending on them
+    setMessages(prevMessages => {
+        // If the last message is an AI question without an answer, pass empty
+        const lastMsg = prevMessages[prevMessages.length - 1];
+        const pendingAnswer = lastMsg?.type === 'ai' ? '' : undefined;
+
+        // Trigger the API call inside the state update (safe here as it's an async separation)
+        (async () => {
+            try {
+                console.log('[MockInterview] Ending interview session:', sessionId, 'Reason:', terminationReason);
+                const res = await endMockInterview(sessionId, pendingAnswer, {
+                    behaviorReport: {
+                        ...visionStatus,
+                        flags: behaviorFlags,
+                        terminated: isTerminated,
+                        reason: terminationReason
+                    }
+                });
+                
+                if (res.data.success) {
+                    navigate(`/dashboard/mock-interview/${sessionId}/report`, {
+                        replace: true, 
+                        state: {
+                            report: res.data.data.report,
+                            qaHistory: res.data.data.qaHistory,
+                            role: res.data.data.role,
+                            difficulty: res.data.data.difficulty,
+                            duration: res.data.data.duration,
+                        },
+                    });
+                } else {
+                    throw new Error(res.data.message || 'Failed to generate report');
+                }
+            } catch (err) {
+                console.error('[MockInterview] Failed to end interview:', err);
+                setError(err.response?.data?.error || err.message || 'Failed to end interview. Please try again.');
+                setIsEnding(false);
+                setInterviewEnded(false);
+            }
+        })();
+
+        return prevMessages;
+    });
+  }, [sessionId, isEnding, interviewEnded, isListening, isSpeaking, stopListening, stopSpeaking, visionStatus, behaviorFlags, navigate]);
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmitAnswer();
     }
   };
+
+  // Timer logic
+  useEffect(() => {
+    if (!startedAt || !duration || interviewEnded) return;
+    
+    const startTime = new Date(startedAt).getTime();
+    if (isNaN(startTime)) return;
+
+    const endTime = startTime + duration * 60 * 1000;
+
+    const updateTimer = () => {
+      const now = Date.now();
+      const remaining = Math.max(0, Math.floor((endTime - now) / 1000));
+      setTimeLeft(remaining);
+      setTimerWarning(remaining <= 120 && remaining > 0);
+
+      if (remaining <= 0) {
+        handleEndInterview('Time limit exceeded');
+      }
+    };
+
+    // Initial update
+    updateTimer();
+    
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [startedAt, duration, interviewEnded, handleEndInterview]);
+
+  // Format time helper
+  const formatTime = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  // Auto-scroll chat
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const difficultyColors = {
     EASY: '#22c55e',
@@ -246,7 +353,34 @@ const MockInterviewPage = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              {/* Voice Controls */}
+              <div className="flex items-center gap-2 mr-4 bg-white/5 p-1.5 rounded-xl border border-white/5">
+                <button 
+                  onClick={() => setIsMuted(!isMuted)}
+                  className={`p-2 rounded-lg transition-all ${isMuted ? 'text-[#94a3b8]' : 'text-[#5de6ff] bg-[#5de6ff]/10'}`}
+                  title={isMuted ? 'Unmute AI' : 'Mute AI'}
+                >
+                  {isMuted ? <Bot size={16} className="opacity-50" /> : <Bot size={16} />}
+                </button>
+                <div className="h-4 w-[1px] bg-white/10" />
+                <button 
+                  onClick={() => setIsCameraOn(!isCameraOn)}
+                  className={`p-2 rounded-lg transition-all ${!isCameraOn ? 'text-red-400 bg-red-400/10' : 'text-[#5de6ff] bg-[#5de6ff]/10'}`}
+                  title={isCameraOn ? 'Turn Camera Off' : 'Turn Camera On'}
+                  disabled={interviewEnded || isEnding}
+                >
+                  {isCameraOn ? <Camera size={16} /> : <CameraOff size={16} />}
+                </button>
+                <div className="h-4 w-[1px] bg-white/10" />
+                <div className="flex items-center gap-1.5 px-2">
+                   <div className={`w-1.5 h-1.5 rounded-full ${voiceMode ? 'bg-[#5de6ff] animate-pulse shadow-[0_0_8px_#5de6ff]' : 'bg-white/10'}`} />
+                   <span className="text-[9px] font-space font-bold uppercase tracking-widest text-[#94a3b8]">
+                      {voiceMode ? 'Speech Live' : 'Text Only'}
+                   </span>
+                </div>
+              </div>
+
               {/* Timer */}
               <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${
                 timerWarning
@@ -270,84 +404,218 @@ const MockInterviewPage = () => {
                 {isEnding ? (
                   <>
                     <Loader2 size={14} className="animate-spin" />
-                    <span>Generating Report...</span>
+                    <span>Ending...</span>
                   </>
                 ) : (
                   <>
                     <StopCircle size={14} />
-                    <span>End Interview</span>
+                    <span>End</span>
                   </>
                 )}
               </motion.button>
             </div>
           </motion.div>
 
-          {/* Chat Area */}
-          <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 space-y-1" style={{ scrollBehavior: 'smooth' }}>
-            <div className="max-w-[800px] mx-auto w-full space-y-4">
-              {/* Interview started indicator */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center py-4"
-              >
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-surface-low border border-[rgba(255,255,255,0.05)] text-[#94a3b8] text-xs">
-                  <BrainCircuit size={14} className="text-[#5de6ff]" />
-                  <span>Neural Interview Simulation Started</span>
-                </div>
-              </motion.div>
+          {/* Main Area with Video Panel */}
+          <div className="flex-1 flex overflow-hidden">
+             {/* Chat Area (Left/Main) */}
+             <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 space-y-1 relative" style={{ scrollBehavior: 'smooth' }}>
+               <div className="max-w-[800px] mx-auto w-full space-y-4">
+                 {/* Interview started indicator */}
+                 <motion.div
+                   initial={{ opacity: 0 }}
+                   animate={{ opacity: 1 }}
+                   className="text-center py-4"
+                 >
+                   <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-surface-low border border-[rgba(255,255,255,0.05)] text-[#94a3b8] text-xs">
+                     <BrainCircuit size={14} className="text-[#5de6ff]" />
+                     <span>Neural Interview Simulation Started</span>
+                   </div>
+                 </motion.div>
 
-              {/* Messages */}
-              <AnimatePresence>
-                {messages.map((msg, idx) => (
-                  <motion.div
-                    key={idx}
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className={`flex gap-3 ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    {msg.type === 'ai' && (
-                      <div className="w-8 h-8 rounded-xl ai-gradient-bg flex items-center justify-center flex-shrink-0 mt-1 shadow-[0_0_10px_rgba(93,230,255,0.2)]">
-                        <Bot size={16} className="text-[#0c0c1d]" />
-                      </div>
-                    )}
+                 {/* Messages */}
+                 <AnimatePresence>
+                   {messages.map((msg, idx) => (
+                     <motion.div
+                       key={idx}
+                       initial={{ opacity: 0, y: 15 }}
+                       animate={{ opacity: 1, y: 0 }}
+                       transition={{ duration: 0.3 }}
+                       className={`flex gap-3 ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                     >
+                       {msg.type === 'ai' && (
+                         <div className="w-8 h-8 rounded-xl ai-gradient-bg flex items-center justify-center flex-shrink-0 mt-1 shadow-[0_0_10px_rgba(93,230,255,0.2)]">
+                           <Bot size={16} className="text-[#0c0c1d]" />
+                         </div>
+                       )}
 
-                    {msg.type === 'typing' ? (
-                      <div className="glass-surface-low rounded-2xl rounded-tl-md px-5 py-4 max-w-[70%] border border-[rgba(255,255,255,0.05)]">
-                        <div className="flex items-center gap-2">
-                          <div className="flex gap-1">
-                            <span className="w-2 h-2 rounded-full bg-[#5de6ff] animate-bounce" style={{ animationDelay: '0ms' }} />
-                            <span className="w-2 h-2 rounded-full bg-[#c0c1ff] animate-bounce" style={{ animationDelay: '150ms' }} />
-                            <span className="w-2 h-2 rounded-full bg-[#5de6ff] animate-bounce" style={{ animationDelay: '300ms' }} />
-                          </div>
-                          <span className="text-xs text-[#94a3b8] ml-2">AI is thinking...</span>
+                       {msg.type === 'typing' ? (
+                         <div className="glass-surface-low rounded-2xl rounded-tl-md px-5 py-4 max-w-[70%] border border-[rgba(255,255,255,0.05)]">
+                           <div className="flex items-center gap-2">
+                             <div className="flex gap-1">
+                               <span className="w-2 h-2 rounded-full bg-[#5de6ff] animate-bounce" style={{ animationDelay: '0ms' }} />
+                               <span className="w-2 h-2 rounded-full bg-[#c0c1ff] animate-bounce" style={{ animationDelay: '150ms' }} />
+                               <span className="w-2 h-2 rounded-full bg-[#5de6ff] animate-bounce" style={{ animationDelay: '300ms' }} />
+                             </div>
+                             <span className="text-xs text-[#94a3b8] ml-2">AI is thinking...</span>
+                           </div>
+                         </div>
+                       ) : (
+                         <div
+                           className={`rounded-2xl px-5 py-4 max-w-[70%] text-sm leading-relaxed whitespace-pre-wrap relative group ${
+                             msg.type === 'ai'
+                               ? 'glass-surface-low rounded-tl-md border border-[rgba(255,255,255,0.05)] text-[#e2e8f0]'
+                               : 'bg-gradient-to-br from-[rgba(192,193,255,0.15)] to-[rgba(93,230,255,0.08)] rounded-tr-md border border-[rgba(192,193,255,0.15)] text-white'
+                           }`}
+                         >
+                           {msg.content}
+                           
+                           {msg.type === 'ai' && !isMuted && (
+                              <motion.div
+                                animate={isSpeaking && idx === messages.length - 1 ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.5 }}
+                                className="absolute -right-2 top-0 w-5 h-5 rounded-full ai-gradient-bg flex items-center justify-center shadow-lg"
+                              >
+                                <div className="flex gap-0.5">
+                                  <span className="w-0.5 h-2 bg-[#0c0c1d] animate-pulse" />
+                                  <span className="w-0.5 h-3 bg-[#0c0c1d] animate-pulse" style={{ animationDelay: '0.2s' }} />
+                                  <span className="w-0.5 h-2 bg-[#0c0c1d] animate-pulse" style={{ animationDelay: '0.4s' }} />
+                                </div>
+                              </motion.div>
+                           )}
+                         </div>
+                       )}
+
+                       {msg.type === 'user' && (
+                         <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center flex-shrink-0 mt-1">
+                           <User size={16} className="text-white" />
+                         </div>
+                       )}
+                     </motion.div>
+                   ))}
+                 </AnimatePresence>
+
+                 <div ref={chatEndRef} />
+               </div>
+             </div>
+
+             {/* Vision Dashboard (Right Side Panel) */}
+             <div className="w-[320px] h-full glass-surface border-l border-white/5 flex flex-col hidden lg:flex">
+               <div className="p-5 border-b border-white/5 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg ai-gradient-bg flex items-center justify-center shadow-[0_0_12px_rgba(93,230,255,0.3)]">
+                      <Eye className="text-[#0c0c1d]" size={16} />
+                    </div>
+                    <span className="font-space font-bold text-xs uppercase tracking-widest text-[#5de6ff]">Live Vision</span>
+                  </div>
+                  <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-[#22c55e]/10 text-[#22c55e]">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#22c55e] animate-pulse shadow-[0_0_8px_#22c55e]" />
+                    <span className="text-[9px] font-bold uppercase tracking-tighter">Compliant</span>
+                  </div>
+               </div>
+
+               <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar">
+                  {/* Camera Preview Box */}
+                  <div className="aspect-video rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative group">
+                    <VideoMonitor 
+                       isActive={isCameraOn && !interviewEnded && !isEnding}
+                       isInterviewing={!interviewEnded && !isEnding}
+                       onStatusUpdate={(status) => setVisionStatus(prev => ({ ...prev, ...status }))}
+                       onAutoEnd={(reason) => handleEndInterview(reason)}
+                       onBehaviorLogged={(flag) => setBehaviorFlags(prev => [...prev, flag])}
+                    />
+                  </div>
+
+                  {/* Metrics Grid */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="glass-surface-low rounded-xl p-3 border border-white/5">
+                        <div className="flex items-center gap-2 mb-2 text-[#94a3b8]">
+                           <Activity size={12} />
+                           <span className="text-[9px] uppercase font-bold tracking-widest">Presence</span>
                         </div>
-                      </div>
-                    ) : (
-                      <div
-                        className={`rounded-2xl px-5 py-4 max-w-[70%] text-sm leading-relaxed whitespace-pre-wrap ${
-                          msg.type === 'ai'
-                            ? 'glass-surface-low rounded-tl-md border border-[rgba(255,255,255,0.05)] text-[#e2e8f0]'
-                            : 'bg-gradient-to-br from-[rgba(192,193,255,0.15)] to-[rgba(93,230,255,0.08)] rounded-tr-md border border-[rgba(192,193,255,0.15)] text-white'
-                        }`}
-                      >
-                        {msg.content}
-                      </div>
-                    )}
+                        <p className={`text-xs font-space font-bold ${visionStatus.faceDetected ? 'text-[#22c55e]' : 'text-red-400'}`}>
+                           {visionStatus.faceDetected ? 'Locked' : 'Missing'}
+                        </p>
+                    </div>
+                    <div className="glass-surface-low rounded-xl p-3 border border-white/5">
+                        <div className="flex items-center gap-2 mb-2 text-[#94a3b8]">
+                           <Smile size={12} />
+                           <span className="text-[9px] uppercase font-bold tracking-widest">Expression</span>
+                        </div>
+                        <p className="text-xs font-space font-bold text-[#5de6ff] capitalize">
+                           {visionStatus.emotion}
+                        </p>
+                    </div>
+                  </div>
 
-                    {msg.type === 'user' && (
-                      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center flex-shrink-0 mt-1">
-                        <User size={16} className="text-white" />
-                      </div>
-                    )}
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+                  {/* Confidence Bar */}
+                  <div className="glass-surface-low rounded-2xl p-4 border border-white/5">
+                     <div className="flex items-center justify-between mb-3 text-[#94a3b8]">
+                        <div className="flex items-center gap-2">
+                           <Zap size={12} className="text-[#f59e0b]" />
+                           <span className="text-[9px] uppercase font-bold tracking-widest">AI Confidence Score</span>
+                        </div>
+                        <span className="text-[10px] font-space font-bold text-white">{Math.round(visionStatus.confidenceScore)}%</span>
+                     </div>
+                     <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                        <motion.div 
+                          initial={{ width: 0 }}
+                          animate={{ width: `${visionStatus.confidenceScore}%` }}
+                          className="h-full bg-gradient-to-r from-[#f59e0b] via-[#5de6ff] to-[#c0c1ff]" 
+                        />
+                     </div>
+                  </div>
 
-              <div ref={chatEndRef} />
-            </div>
+                  {/* Guidance Section */}
+                  <div className="p-4 rounded-2xl bg-[#5de6ff]/5 border border-[#5de6ff]/10">
+                     <h4 className="text-[9px] font-space font-bold uppercase tracking-[0.2em] text-[#5de6ff] mb-2 flex items-center gap-2">
+                        <AlertCircle size={10} /> Smart Vision Assistant
+                     </h4>
+                     <p className="text-[10px] text-[#94a3b8] leading-relaxed italic">
+                        "Your expression is {visionStatus.emotion}. Maintain neutral eye contact for a professional score."
+                     </p>
+                  </div>
+               </div>
+
+               <div className="p-5 border-t border-white/5">
+                  <div className="flex items-center gap-3 text-[9px] font-bold text-[#475569] uppercase tracking-widest">
+                     <ShieldCheck size={12} /> Privacy Protected · On-Device AI
+                  </div>
+               </div>
+             </div>
           </div>
+
+          {/* Voice Visualization Overlay */}
+          <AnimatePresence>
+            {(isListening || isSpeaking) && (
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                className="mx-auto mb-4 flex flex-col items-center gap-2"
+              >
+                 <div className="flex gap-1.5 h-8 items-center">
+                    {[...Array(8)].map((_, i) => (
+                      <motion.div
+                        key={i}
+                        animate={{ 
+                          height: isListening ? [10, 24, 10] : [10, 16, 10], 
+                          backgroundColor: isListening ? '#5de6ff' : '#c0c1ff' 
+                        }}
+                        transition={{ 
+                          repeat: Infinity, 
+                          duration: 0.5, 
+                          delay: i * 0.1 
+                        }}
+                        className="w-1 rounded-full shadow-[0_0_10px_rgba(93,230,255,0.4)]"
+                      />
+                    ))}
+                 </div>
+                 <span className="font-space text-[10px] uppercase font-bold tracking-[0.2em] text-[#5de6ff] flex items-center gap-2">
+                    {isListening ? 'Listening for your response...' : 'AI is speaking...'}
+                 </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Error Bar */}
           <AnimatePresence>
@@ -365,33 +633,61 @@ const MockInterviewPage = () => {
                 </div>
               </motion.div>
             )}
+            {supported.recognition === false && voiceMode && (
+               <motion.div
+                 initial={{ opacity: 0, y: 10 }}
+                 animate={{ opacity: 1, y: 0 }}
+                 className="mx-4 sm:mx-8 mb-2"
+               >
+                 <div className="max-w-[800px] mx-auto p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center gap-3 text-yellow-500 text-[10px] font-bold uppercase tracking-wider">
+                   <AlertCircle size={14} />
+                   Voice recognition not supported in this browser. Use Chrome or Safari for speech features.
+                 </div>
+               </motion.div>
+            )}
           </AnimatePresence>
 
           {/* Input Area */}
           <div className="glass-surface border-t border-[rgba(255,255,255,0.05)] px-4 sm:px-8 py-4 flex-shrink-0">
             <div className="max-w-[800px] mx-auto w-full">
               <div className="flex items-end gap-3">
-                <div className="flex-1 relative">
+                <div className="flex-1 relative group">
                   <textarea
                     ref={textareaRef}
                     id="mock-interview-answer"
                     value={currentAnswer}
                     onChange={(e) => setCurrentAnswer(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder={interviewEnded ? 'Interview has ended.' : 'Type your answer... (Shift+Enter for new line)'}
+                    placeholder={interviewEnded ? 'Interview has ended.' : isListening ? 'Listening...' : 'Type your answer...'}
                     disabled={isSubmitting || interviewEnded || isEnding}
                     rows={2}
-                    className="glass-input resize-none text-sm pr-4 py-3"
+                    className={`glass-input resize-none text-sm pr-4 py-3 transition-all ${isListening ? 'border-[#5de6ff] shadow-[0_0_15px_rgba(93,230,255,0.1)]' : ''}`}
                     style={{ minHeight: '56px', maxHeight: '160px' }}
                   />
+                  
+                  {supported.recognition && (
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={handleToggleMic}
+                      className={`absolute right-4 bottom-3 w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                        isListening 
+                          ? 'ai-gradient-bg text-[#0c0c1d] shadow-[0_0_20px_rgba(93,230,255,0.4)] animate-pulse' 
+                          : 'bg-white/5 text-[#94a3b8] hover:text-[#5de6ff] hover:bg-[#5de6ff]/10'
+                      }`}
+                    >
+                       <Mic size={18} />
+                    </motion.button>
+                  )}
                 </div>
+
                 <motion.button
                   whileHover={!isSubmitting && !interviewEnded ? { scale: 1.05 } : {}}
                   whileTap={!isSubmitting && !interviewEnded ? { scale: 0.95 } : {}}
                   onClick={handleSubmitAnswer}
-                  disabled={!currentAnswer.trim() || isSubmitting || interviewEnded}
+                  disabled={(!currentAnswer.trim() && !transcript.trim()) || isSubmitting || interviewEnded}
                   className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${
-                    currentAnswer.trim() && !isSubmitting && !interviewEnded
+                    (currentAnswer.trim() || transcript.trim()) && !isSubmitting && !interviewEnded
                       ? 'ai-gradient-bg text-[#0c0c1d] shadow-[0_0_15px_rgba(93,230,255,0.3)]'
                       : 'glass-surface-low border border-[rgba(255,255,255,0.06)] text-[#94a3b8]'
                   }`}
@@ -404,7 +700,11 @@ const MockInterviewPage = () => {
                 </motion.button>
               </div>
               <p className="text-[10px] text-[#94a3b8] mt-2 ml-1">
-                Press <span className="text-[#c0c1ff] font-medium">Enter</span> to send · <span className="text-[#c0c1ff] font-medium">Shift+Enter</span> for new line · <span className="text-[#c0c1ff] font-medium">End Interview</span> to finish
+                {isListening ? (
+                  <span className="text-[#5de6ff] font-bold animate-pulse">Recording neural input... Click mic again to stop.</span>
+                ) : (
+                  <>Press <span className="text-[#c0c1ff] font-medium">Enter</span> to send · <span className="text-[#c0c1ff] font-medium">Shift+Enter</span> for new line · {voiceMode && <span className="text-[#5de6ff] font-medium">Microphone</span>} activated</>
+                )}
               </p>
             </div>
           </div>

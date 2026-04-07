@@ -3,11 +3,12 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
   Mic, Plus, Clock, Target, Trophy, ChevronRight,
-  BrainCircuit, Sparkles, CalendarDays, BarChart3
+  BrainCircuit, Sparkles, CalendarDays, BarChart3,
+  Trash2, Loader2
 } from 'lucide-react';
 import Sidebar from '../components/dashboard/Sidebar';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
-import { getAllMockSessions } from '../api/mockInterview.api';
+import { getAllMockSessions, deleteMockInterview } from '../api/mockInterview.api';
 
 const difficultyColors = {
   EASY: '#22c55e',
@@ -25,6 +26,7 @@ const MockInterviewsListPage = () => {
   const navigate = useNavigate();
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
     fetchSessions();
@@ -40,6 +42,27 @@ const MockInterviewsListPage = () => {
       console.error('Failed to fetch sessions:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (e, sessionId) => {
+    e.stopPropagation(); // Prevent card click (navigation)
+    
+    if (!window.confirm('Are you sure you want to delete this interview record permanently? This cannot be undone.')) {
+      return;
+    }
+
+    setDeletingId(sessionId);
+    try {
+      const res = await deleteMockInterview(sessionId);
+      if (res.data.success) {
+        setSessions(prev => prev.filter(s => s._id !== sessionId));
+      }
+    } catch (error) {
+      console.error('Failed to delete session:', error);
+      alert('Failed to delete record. Please try again.');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -227,6 +250,24 @@ const MockInterviewsListPage = () => {
                                 {score}
                               </div>
                             )}
+
+                            {/* Delete Button */}
+                            <button
+                              onClick={(e) => handleDelete(e, session._id)}
+                              disabled={deletingId === session._id}
+                              className={`p-2.5 rounded-xl transition-all ${
+                                deletingId === session._id 
+                                  ? 'bg-white/5 text-white/20' 
+                                  : 'text-[#94a3b8] hover:text-red-400 hover:bg-red-400/10'
+                              }`}
+                              title="Delete Session"
+                            >
+                              {deletingId === session._id ? (
+                                <Loader2 size={16} className="animate-spin" />
+                              ) : (
+                                <Trash2 size={16} />
+                              )}
+                            </button>
 
                             <ChevronRight size={18} className="text-[#94a3b8] group-hover:text-[#5de6ff] group-hover:translate-x-1 transition-all" />
                           </div>

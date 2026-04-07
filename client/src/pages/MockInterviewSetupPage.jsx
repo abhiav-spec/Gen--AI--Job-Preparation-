@@ -3,11 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
   Mic, BrainCircuit, Zap, Target, Clock,
-  ChevronRight, Sparkles, Shield, AlertCircle
+  ChevronRight, Sparkles, Shield, AlertCircle, Volume2
 } from 'lucide-react';
 import Sidebar from '../components/dashboard/Sidebar';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
 import { startMockInterview } from '../api/mockInterview.api';
+import VideoMonitor from '../components/interview/VideoMonitor';
+import { Camera, CameraOff, ShieldCheck, AlertTriangle } from 'lucide-react';
 
 const difficultyConfig = {
   EASY: {
@@ -41,10 +43,13 @@ const MockInterviewSetupPage = () => {
   const [difficulty, setDifficulty] = useState('MEDIUM');
   const [duration, setDuration] = useState(15);
   const [jobDescription, setJobDescription] = useState('');
+  const [voiceMode, setVoiceMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isCameraOn, setIsCameraOn] = useState(false);
+  const [isCameraReady, setIsCameraReady] = useState(false);
 
-  const canStart = role.trim() && jobDescription.trim();
+  const canStart = role.trim() && jobDescription.trim() && isCameraReady;
 
   const handleStart = async () => {
     if (!canStart) return;
@@ -52,7 +57,7 @@ const MockInterviewSetupPage = () => {
     setError('');
 
     try {
-      console.log('[MockInterview] Starting interview...', { role: role.trim(), difficulty, duration });
+      console.log('[MockInterview] Starting interview...', { role: role.trim(), difficulty, duration, voiceMode });
       
       const res = await startMockInterview({
         role: role.trim(),
@@ -73,6 +78,7 @@ const MockInterviewSetupPage = () => {
             firstQuestion: res.data.data.question,
             questionNumber: res.data.data.questionNumber,
             startedAt: res.data.data.startedAt,
+            voiceMode: voiceMode,
           },
         });
       } else {
@@ -200,7 +206,7 @@ const MockInterviewSetupPage = () => {
                   </div>
 
                   {/* Duration */}
-                  <div className="mb-6">
+                  <div className="mb-8">
                     <label className="block font-space text-xs uppercase tracking-widest text-[#c0c1ff] font-bold mb-3">
                       <Clock size={14} className="inline mr-2" />
                       Duration
@@ -224,6 +230,36 @@ const MockInterviewSetupPage = () => {
                     </div>
                   </div>
 
+                  {/* Voice Mode Toggle */}
+                  <div className="mb-8 p-6 rounded-[2rem] glass-surface-low border border-[rgba(93,230,255,0.1)] flex items-center justify-between group hover:border-[rgba(93,230,255,0.25)] transition-all">
+                    <div className="flex gap-4">
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${voiceMode ? 'ai-gradient-bg text-[#0c0c1d] shadow-[0_0_15px_rgba(93,230,255,0.3)]' : 'bg-white/5 text-[#94a3b8]'}`}>
+                        <Volume2 size={24} />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-space font-bold text-white text-sm">Speech Mode</h4>
+                          <span className="px-1.5 py-0.5 rounded bg-secondary/10 border border-secondary/20 text-secondary text-[8px] font-bold uppercase tracking-widest">
+                            Beta
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[#94a3b8] max-w-xs leading-relaxed">
+                          AI will speak questions aloud and you can answer using your microphone for a total simulation.
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => setVoiceMode(!voiceMode)}
+                      className={`relative w-14 h-8 rounded-full transition-colors ${voiceMode ? 'ai-gradient-bg' : 'bg-white/10'}`}
+                    >
+                      <motion.div
+                        animate={{ x: voiceMode ? 26 : 4 }}
+                        className="absolute top-1 w-6 h-6 rounded-full bg-white shadow-lg"
+                      />
+                    </button>
+                  </div>
+
                   {/* Job Description */}
                   <div className="mb-8">
                     <label className="block font-space text-xs uppercase tracking-widest text-[#c0c1ff] font-bold mb-3">
@@ -241,6 +277,19 @@ const MockInterviewSetupPage = () => {
 
                   {/* Error */}
                   <AnimatePresence>
+                    {!isCameraReady && !error && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center gap-3 mb-6"
+                      >
+                        <ShieldCheck className="text-yellow-500" size={18} />
+                        <div>
+                          <p className="text-[10px] font-bold text-yellow-500 uppercase tracking-widest leading-none mb-1">Mandatory Vision Check</p>
+                          <p className="text-[10px] text-yellow-500/70">Neural simulation requires camera and microphone permissions to proceed.</p>
+                        </div>
+                      </motion.div>
+                    )}
                     {error && (
                       <motion.div
                         initial={{ opacity: 0, y: -10 }}
@@ -290,6 +339,69 @@ const MockInterviewSetupPage = () => {
                 transition={{ duration: 0.6, delay: 0.2 }}
                 className="lg:col-span-5 flex flex-col gap-6"
               >
+                {/* Vision Setup Check */}
+                <div className="glass-surface rounded-[2rem] border border-[rgba(255,255,255,0.05)] p-0 overflow-hidden relative group">
+                  <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-[#5de6ff]/10 flex items-center justify-center border border-[#5de6ff]/20">
+                         <Camera className="text-[#5de6ff]" size={16} />
+                      </div>
+                      <h3 className="font-space font-bold text-white text-sm">Neural Vision Preview</h3>
+                    </div>
+                    {isCameraReady && (
+                       <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-[#22c55e]/10 border border-[#22c55e]/20 text-[#22c55e] text-[9px] font-bold uppercase tracking-widest">
+                          <ShieldCheck size={10} /> Verified
+                       </div>
+                    )}
+                  </div>
+                  
+                  <div className="aspect-video w-full relative bg-[#0c0c1d] flex items-center justify-center">
+                    {!isCameraOn ? (
+                      <div className="flex flex-col items-center gap-4 text-center p-6">
+                        <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
+                           <CameraOff size={24} className="text-[#94a3b8]" />
+                        </div>
+                        <div>
+                           <p className="text-[10px] font-space font-bold uppercase tracking-widest text-[#94a3b8] mb-1">Vision Locked</p>
+                           <p className="text-[9px] text-[#475569] max-w-[140px]">Enable vision feed to verify interview environment.</p>
+                        </div>
+                        <button 
+                           onClick={() => setIsCameraOn(true)}
+                           className="px-4 py-2 rounded-xl ai-gradient-bg text-[#0c0c1d] font-space font-bold text-[10px] uppercase tracking-widest shadow-lg"
+                        >
+                           Enable Neural Vision
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <VideoMonitor 
+                           isActive={isCameraOn}
+                           isInterviewing={false}
+                           onPermissionGranted={(granted) => setIsCameraReady(granted)}
+                        />
+                        <button 
+                          onClick={() => setIsCameraOn(false)}
+                          className="absolute bottom-4 right-4 p-2 rounded-lg bg-black/50 backdrop-blur-md border border-white/10 text-white hover:bg-black/70 transition-all z-30"
+                          title="Disable Camera"
+                        >
+                           <CameraOff size={16} />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                  
+                  <div className="p-5 bg-white/5 space-y-3">
+                    <div className="flex gap-3 items-start">
+                        <div className={`w-1.5 h-1.5 rounded-full mt-1.5 ${isCameraReady ? 'bg-[#22c55e]' : 'bg-white/10'}`} />
+                        <p className="text-[10px] text-[#94a3b8] leading-relaxed">System requires face-to-face simulation environment validation.</p>
+                    </div>
+                    <div className="flex gap-3 items-start">
+                        <div className={`w-1.5 h-1.5 rounded-full mt-1.5 ${isCameraReady ? 'bg-[#22c55e]' : 'bg-white/10'}`} />
+                        <p className="text-[10px] text-[#94a3b8] leading-relaxed">Ensure adequate lighting and centered framing.</p>
+                    </div>
+                  </div>
+                </div>
+
                 {/* How it works */}
                 <div className="glass-surface rounded-[2rem] border border-[rgba(255,255,255,0.05)] p-8">
                   <div className="flex items-center gap-2 mb-5">

@@ -247,4 +247,31 @@ async function getAllSessions(req, res) {
     }
 }
 
-export { startInterview, submitAnswer, endInterview, getSession, getAllSessions };
+// ─── Delete a session permanently ───────────────────────────────────────────
+
+async function deleteInterview(req, res) {
+    try {
+        const { sessionId } = req.params;
+        const session = await MockInterview.findOneAndDelete({
+            _id: sessionId,
+            user: req.user.id,
+        });
+
+        if (!session) {
+            return res.status(404).json({ error: 'Interview session not found or unauthorized.' });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: 'Interview session deleted permanently.',
+        });
+    } catch (error) {
+        console.error('Error deleting mock interview:', error);
+        return res.status(500).json({
+            error: 'Failed to delete interview record.',
+            details: error.message,
+        });
+    }
+}
+
+export { startInterview, submitAnswer, endInterview, getSession, getAllSessions, deleteInterview };

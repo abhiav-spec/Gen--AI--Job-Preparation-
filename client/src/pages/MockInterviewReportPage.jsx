@@ -8,7 +8,8 @@ import {
   ChevronDown, ChevronUp, Bot, User, Sparkles, Star
 } from 'lucide-react';
 import Sidebar from '../components/dashboard/Sidebar';
-import { getMockSession } from '../api/mockInterview.api';
+import { getMockSession, deleteMockInterview } from '../api/mockInterview.api';
+import { Trash2, Loader2 } from 'lucide-react';
 
 // Circular score gauge
 const ScoreGauge = ({ label, score, color, delay = 0 }) => {
@@ -106,6 +107,7 @@ const MockInterviewReportPage = () => {
   const [role, setRole] = useState(location.state?.role || '');
   const [difficulty, setDifficulty] = useState(location.state?.difficulty || '');
   const [loading, setLoading] = useState(!location.state?.report);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -130,6 +132,24 @@ const MockInterviewReportPage = () => {
       setError('Failed to load interview report.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm('Delete this interview record? This will remove all data and the AI report permanently.')) {
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      const res = await deleteMockInterview(sessionId);
+      if (res.data.success) {
+        navigate('/dashboard/mock-interviews', { replace: true });
+      }
+    } catch (err) {
+       console.error('Delete failed:', err);
+       alert('Failed to delete report.');
+       setIsDeleting(false);
     }
   };
 
@@ -401,9 +421,21 @@ const MockInterviewReportPage = () => {
                 whileTap={{ scale: 0.99 }}
                 onClick={() => navigate('/dashboard')}
                 className="flex-1 py-4 rounded-2xl glass-surface border border-[rgba(255,255,255,0.08)] text-[#94a3b8] hover:text-white font-space font-bold text-sm uppercase tracking-widest flex items-center justify-center gap-2 transition-colors"
+                disabled={isDeleting}
               >
                 <ArrowLeft size={18} />
                 Back to Dashboard
+              </motion.button>
+              
+              <motion.button
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="px-6 py-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all font-space font-bold text-xs uppercase tracking-wider disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isDeleting ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
+                <span>Delete</span>
               </motion.button>
             </motion.div>
 

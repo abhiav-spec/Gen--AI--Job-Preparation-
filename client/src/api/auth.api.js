@@ -29,11 +29,71 @@ export const clearAccessToken = () => {
 };
 
 api.interceptors.request.use((config) => {
-  if (_accessToken) {
-    config.headers['Authorization'] = `Bearer ${_accessToken}`;
+  const token = getAccessToken();
+  if (token) {
+    config.headers['Authorization'] = `Bearer ${token}`;
   }
   return config;
 });
+
+// Auto-refresh token on 401 and retry the request once
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(({ resolve, reject }) => {
+    if (error) {
+      reject(error);
+    } else {
+      resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Skip refresh logic for login/refresh endpoints to avoid infinite loops
+    if (originalRequest.url?.includes('/login') || originalRequest.url?.includes('/refresh-token')) {
+      return Promise.reject(error);
+    }
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then((token) => {
+          originalRequest.headers['Authorization'] = `Bearer ${token}`;
+          return api(originalRequest);
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const res = await refreshAccessToken();
+        const { accessToken } = res.data;
+        if (accessToken) {
+          setAccessToken(accessToken);
+          processQueue(null, accessToken);
+          originalRequest.headers['Authorization'] = `Bearer ${accessToken}`;
+          return api(originalRequest);
+        }
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 // ─── Auth API ───────────────────────────────────────────────────────────────
 

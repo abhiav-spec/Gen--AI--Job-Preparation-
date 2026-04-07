@@ -81,8 +81,8 @@ export const submitMockAnswer = (sessionId, answer) =>
   api.post(`/${sessionId}/answer`, { answer });
 
 // POST /:sessionId/end — End interview and get report
-export const endMockInterview = (sessionId, lastAnswer) =>
-  api.post(`/${sessionId}/end`, { lastAnswer });
+export const endMockInterview = (sessionId, lastAnswer, behaviorReport = null) =>
+  api.post(`/${sessionId}/end`, { lastAnswer, behaviorReport });
 
 // GET /:sessionId — Get session details
 export const getMockSession = (sessionId) =>
@@ -91,5 +91,9 @@ export const getMockSession = (sessionId) =>
 // GET /sessions/all — Get all mock interview sessions
 export const getAllMockSessions = () =>
   api.get('/sessions/all');
+
+// DELETE /:sessionId — Delete session permanently
+export const deleteMockInterview = (sessionId) =>
+  api.delete(`/${sessionId}`);
 
 export default api;

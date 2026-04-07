@@ -6,6 +6,7 @@ import {
     endInterview,
     getSession,
     getAllSessions,
+    deleteInterview,
 } from '../controllers/mockInterview.controller.js';
 
 const mockInterviewRouter = express.Router();
@@ -23,6 +24,9 @@ mockInterviewRouter.post('/:sessionId/answer', authUser, submitAnswer);
 
 // POST   /api/mock-interview/:sessionId/end      — End interview, get report
 mockInterviewRouter.post('/:sessionId/end', authUser, endInterview);
+
+// DELETE /api/mock-interview/:sessionId           — Remove session permanently
+mockInterviewRouter.delete('/:sessionId', authUser, deleteInterview);
 
 // GET    /api/mock-interview/:sessionId           — Get single session details
 mockInterviewRouter.get('/:sessionId', authUser, getSession);

@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Brain, Shield, TrendingUp, Clock, AlertTriangle, AlertCircle,
   ChevronDown, ChevronUp, Star, CheckCircle, FileText, Download,
-  RefreshCw, Zap, Calendar, BarChart2, ChevronRight, Layers
+  RefreshCw, Zap, Calendar, BarChart2, ChevronRight, Layers,
+  Trash2, Loader2
 } from 'lucide-react';
 import Sidebar from '../components/dashboard/Sidebar';
 import { useAuth } from '../context/AuthContext';
@@ -12,6 +13,7 @@ import {
   getInterviewReports,
   getInterviewReportDetails,
   downloadInterviewReport,
+  deleteInterviewReport
 } from '../api/interview.api';
 import Loader from '../components/ui/Loader';
 
@@ -130,6 +132,7 @@ const ViewReportPage = () => {
   const [reportLoading, setReportLoading] = useState(false);
   const [tab, setTab] = useState('technical');
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState('');
 
   // Load report list
@@ -146,6 +149,7 @@ const ViewReportPage = () => {
       const firstId = data[0]?._id;
       const autoId = (savedId && data.find(r => r._id === savedId)) ? savedId : firstId;
       if (autoId) setSelectedId(autoId);
+      else setSelectedId(null); // Reset if list is empty
     } catch (err) {
       console.error('Failed to load reports', err);
       setError('Failed to load your reports. Please try again.');
@@ -153,6 +157,34 @@ const ViewReportPage = () => {
       setListLoading(false);
     }
   }, [user]);
+
+  const handleRemoveReport = async (e, reportId) => {
+    if (e) e.stopPropagation();
+    
+    if (!window.confirm('Are you sure you want to delete this AI report permanently? This data cannot be recovered.')) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const res = await deleteInterviewReport(reportId);
+      if (res.data.success) {
+        setReportList(prev => {
+          const newList = prev.filter(r => r._id !== reportId);
+          if (selectedId === reportId) {
+            setSelectedId(newList[0]?._id || null);
+            localStorage.removeItem('latestReportId');
+          }
+          return newList;
+        });
+      }
+    } catch (err) {
+      console.error('Delete failed', err);
+      alert('Failed to delete report.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   useEffect(() => { loadReportList(); }, [loadReportList]);
 
@@ -286,14 +318,21 @@ const ViewReportPage = () => {
                                 <span className="text-[10px] text-[#64748b]">{formatDate(r.createdAt)}</span>
                               </div>
                             </div>
-                            <div className="shrink-0 text-right">
+                            <div className="shrink-0 flex flex-col items-end gap-2">
                               <span className={`text-xs font-space font-bold ${(r.matchScore ?? 0) >= 75 ? 'text-[#5de6ff]' : (r.matchScore ?? 0) >= 50 ? 'text-[#c0c1ff]' : 'text-red-400'}`}>
                                 {r.matchScore ?? '—'}%
                               </span>
+                              <button
+                                onClick={(e) => handleRemoveReport(e, r._id)}
+                                className="p-1.5 rounded-md hover:bg-red-500/10 text-[#94a3b8] hover:text-red-400 transition-all opacity-0 group-hover:opacity-100"
+                                title="Delete Report"
+                              >
+                                <Trash2 size={12} />
+                              </button>
                             </div>
                           </div>
                           {isSelected && (
-                            <ChevronRight size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5de6ff]" />
+                            <ChevronRight size={12} className="absolute right-1 top-1/2 -translate-y-1/2 text-[#5de6ff]" />
                           )}
                         </motion.button>
                       );
@@ -320,7 +359,17 @@ const ViewReportPage = () => {
                         <div className="flex-1">
                           <span className="text-[9px] font-space uppercase tracking-widest text-[#5de6ff] font-bold block mb-1">Interview Intelligence</span>
                           <h2 className="font-space text-2xl font-bold text-white tracking-tight mb-1">{report.title || 'Interview Report'}</h2>
-                          <p className="text-xs text-[#94a3b8]">Generated on {formatDate(report.createdAt)}</p>
+                          <div className="flex items-center gap-4">
+                            <p className="text-xs text-[#94a3b8]">Generated on {formatDate(report.createdAt)}</p>
+                            <button
+                              onClick={(e) => handleRemoveReport(e, report._id)}
+                              disabled={isDeleting}
+                              className="text-[10px] font-space font-bold uppercase tracking-widest text-red-400/60 hover:text-red-400 flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                            >
+                              {isDeleting ? <Loader2 size={10} className="animate-spin" /> : <Trash2 size={10} />}
+                              Delete Record
+                            </button>
+                          </div>
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                           {[
