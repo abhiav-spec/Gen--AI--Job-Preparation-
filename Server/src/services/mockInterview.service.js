@@ -15,9 +15,18 @@ async function chatJson(messages) {
         max_tokens: 4096,
     });
 
-    const raw = response.choices[0]?.message?.content;
+    let raw = response.choices[0]?.message?.content;
     if (!raw) throw new Error('Groq returned an empty response.');
-    return JSON.parse(raw);
+    
+    // Clean up Markdown formatting if present
+    raw = raw.replace(/```json\n?/, '').replace(/\n?```/, '').trim();
+    
+    try {
+        return JSON.parse(raw);
+    } catch (error) {
+        console.error('Failed to parse Groq response as JSON:', raw);
+        throw new Error('AI returned an invalid response format.');
+    }
 }
 
 // ─── Build context from history ──────────────────────────────────────────────
