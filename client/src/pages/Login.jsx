@@ -6,7 +6,6 @@ import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import { loginUser, setAccessToken } from '../api/auth.api';
 import { useAuth } from '../context/AuthContext';
-import { motion } from 'framer-motion';
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -28,8 +27,8 @@ const Login = () => {
         // Normalize: server returns 'id', but many components use '_id'
         const normalizedUser = { ...data.user, _id: data.user._id || data.user.id };
         setUser(normalizedUser);
-        console.log('✅ Login successful, access token stored');
         navigate('/dashboard');
+        console.log('✅ Login successful, access token stored');
       } else {
         setError('Login response missing access token');
       }
@@ -44,8 +43,8 @@ const Login = () => {
   return (
     <div className="page-wrapper pt-24">
       <AuthNavbar />
-      <AuthCard 
-        title="Welcome back" 
+      <AuthCard
+        title="Welcome back"
         subtitle="Please enter your details to sign in"
       >
         <form onSubmit={handleSubmit} className="space-y-6">
