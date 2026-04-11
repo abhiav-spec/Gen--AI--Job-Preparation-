@@ -17,6 +17,7 @@ const MockInterviewPage = () => {
   const navigate = useNavigate();
   const chatEndRef = useRef(null);
   const textareaRef = useRef(null);
+  const endTriggeredRef = useRef(false);
 
   // Voice Hook
   const {
@@ -62,6 +63,7 @@ const MockInterviewPage = () => {
   });
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [behaviorFlags, setBehaviorFlags] = useState([]);
+  const [showMobileVision, setShowMobileVision] = useState(false);
   
   // Ref for accumulating metrics without triggering re-renders (crucial for timer stability)
   const behaviorMetricsRef = useRef({
@@ -242,7 +244,8 @@ const MockInterviewPage = () => {
         isTerminated = true;
     }
     
-    if (isEnding || interviewEnded) return;
+    if (isEnding || interviewEnded || endTriggeredRef.current) return;
+    endTriggeredRef.current = true;
     
     // Stop all active processes immediately
     if (isListening) stopListening();
@@ -307,6 +310,7 @@ const MockInterviewPage = () => {
                 setError(err.response?.data?.error || err.message || 'Failed to end interview. Please try again.');
                 setIsEnding(false);
                 setInterviewEnded(false);
+              endTriggeredRef.current = false;
             }
         })();
 
@@ -321,40 +325,28 @@ const MockInterviewPage = () => {
     }
   };
 
-  // Timer logic - Refactored to handle clock skew
-  const [timeLeftSet, setTimeLeftSet] = useState(false);
-
+  // Timer logic: derive remaining time from absolute end timestamp to avoid drift/reset bugs.
   useEffect(() => {
-    if (!startedAt || !duration || interviewEnded || timeLeftSet) return;
-    
-    const startTimeServer = new Date(startedAt).getTime();
-    const nowServer = Date.now(); // Local approximation
-    const elapsedSeconds = Math.max(0, Math.floor((nowServer - startTimeServer) / 1000));
-    
-    // If elapsed time is suspiciously high or negative, assume it's a fresh start
-    // otherwise use the server-synced elapsed time
-    const initialRemaining = Math.max(0, (duration * 60) - elapsedSeconds);
-    
-    setTimeLeft(initialRemaining);
-    setTimeLeftSet(true);
-  }, [startedAt, duration, interviewEnded, timeLeftSet]);
+    if (!startedAt || !duration || interviewEnded) return;
 
-  useEffect(() => {
-    if (!timeLeftSet || interviewEnded || timeLeft <= 0) return;
+    const startTime = new Date(startedAt).getTime();
+    if (Number.isNaN(startTime)) return;
 
-    const interval = setInterval(() => {
-      setTimeLeft(prev => {
-        const next = Math.max(0, prev - 1);
-        if (next <= 0) {
-          handleEndInterview('Time limit exceeded');
-          clearInterval(interval);
-        }
-        return next;
-      });
-    }, 1000);
+    const endAt = startTime + (duration * 60 * 1000);
+
+    const syncRemaining = () => {
+      const next = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
+      setTimeLeft(next);
+      if (next <= 0) {
+        handleEndInterview('Time limit exceeded');
+      }
+    };
+
+    syncRemaining();
+    const interval = setInterval(syncRemaining, 1000);
 
     return () => clearInterval(interval);
-  }, [timeLeftSet, interviewEnded, handleEndInterview, timeLeft]);
+  }, [startedAt, duration, interviewEnded, handleEndInterview]);
 
   // Warning logic
   useEffect(() => {
@@ -390,14 +382,14 @@ const MockInterviewPage = () => {
           <motion.div
             initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className="glass-surface border-b border-[rgba(255,255,255,0.05)] px-6 py-4 flex items-center justify-between flex-shrink-0 pl-16 xl:pl-6"
+            className="glass-surface border-b border-[rgba(255,255,255,0.05)] px-3 sm:px-6 py-3 sm:py-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 flex-shrink-0 pl-14 sm:pl-16 xl:pl-6"
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
               <div className="w-9 h-9 rounded-xl ai-gradient-bg flex items-center justify-center shadow-[0_0_15px_rgba(93,230,255,0.3)]">
                 <Mic className="text-[#0c0c1d]" size={18} />
               </div>
-              <div>
-                <h2 className="font-space font-bold text-white text-sm leading-tight">{role || 'Mock Interview'}</h2>
+              <div className="min-w-0">
+                <h2 className="font-space font-bold text-white text-sm leading-tight truncate">{role || 'Mock Interview'}</h2>
                 <div className="flex items-center gap-3 mt-0.5">
                   <span
                     className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md"
@@ -416,9 +408,9 @@ const MockInterviewPage = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center flex-wrap gap-2 sm:gap-3">
               {/* Voice Controls */}
-              <div className="flex items-center gap-2 mr-4 bg-white/5 p-1.5 rounded-xl border border-white/5">
+              <div className="flex items-center gap-2 bg-white/5 p-1.5 rounded-xl border border-white/5">
                 <button 
                   onClick={() => setIsMuted(!isMuted)}
                   className={`p-2 rounded-lg transition-all ${isMuted ? 'text-[#94a3b8]' : 'text-[#5de6ff] bg-[#5de6ff]/10'}`}
@@ -444,6 +436,16 @@ const MockInterviewPage = () => {
                 </div>
               </div>
 
+              <button
+                type="button"
+                onClick={() => setShowMobileVision((prev) => !prev)}
+                className="lg:hidden flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] text-[#c0c1ff]"
+              >
+                <Eye size={14} />
+                <span className="font-space text-[10px] font-bold uppercase tracking-wider">Vision</span>
+                <ChevronDown size={14} className={`transition-transform ${showMobileVision ? 'rotate-180' : ''}`} />
+              </button>
+
               {/* Timer */}
               <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${
                 timerWarning
@@ -451,7 +453,7 @@ const MockInterviewPage = () => {
                   : 'border-[rgba(255,255,255,0.06)] glass-surface-low text-[#94a3b8]'
               }`}>
                 <Clock size={16} className={timerWarning ? 'animate-pulse' : ''} />
-                <span className="font-space font-bold text-lg tabular-nums">
+                <span className="font-space font-bold text-base sm:text-lg tabular-nums">
                   {formatTime(timeLeft)}
                 </span>
               </div>
@@ -478,6 +480,34 @@ const MockInterviewPage = () => {
               </motion.button>
             </div>
           </motion.div>
+
+          {showMobileVision && (
+            <div className="lg:hidden px-3 sm:px-6 pt-3">
+              <div className="glass-surface rounded-2xl border border-white/5 p-3 space-y-3">
+                <div className="aspect-video rounded-xl overflow-hidden border border-white/10">
+                  <VideoMonitor
+                    isActive={isCameraOn && !interviewEnded && !isEnding}
+                    isInterviewing={!interviewEnded && !isEnding}
+                    onStatusUpdate={handleStatusUpdate}
+                    onAutoEnd={(reason) => handleEndInterview(reason)}
+                    onBehaviorLogged={(flag) => setBehaviorFlags(prev => [...prev, flag])}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="glass-surface-low rounded-xl p-3 border border-white/5">
+                    <p className="text-[9px] uppercase font-bold tracking-widest text-[#94a3b8] mb-1">Presence</p>
+                    <p className={`text-xs font-space font-bold ${visionStatus.faceDetected ? 'text-[#22c55e]' : 'text-red-400'}`}>
+                      {visionStatus.faceDetected ? 'Locked' : 'Missing'}
+                    </p>
+                  </div>
+                  <div className="glass-surface-low rounded-xl p-3 border border-white/5">
+                    <p className="text-[9px] uppercase font-bold tracking-widest text-[#94a3b8] mb-1">Confidence</p>
+                    <p className="text-xs font-space font-bold text-[#5de6ff]">{Math.round(visionStatus.confidenceScore)}%</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Main Area with Video Panel */}
           <div className="flex-1 flex overflow-hidden">
@@ -513,7 +543,7 @@ const MockInterviewPage = () => {
                        )}
 
                        {msg.type === 'typing' ? (
-                         <div className="glass-surface-low rounded-2xl rounded-tl-md px-5 py-4 max-w-[70%] border border-[rgba(255,255,255,0.05)]">
+                         <div className="glass-surface-low rounded-2xl rounded-tl-md px-5 py-4 max-w-[85%] sm:max-w-[70%] border border-[rgba(255,255,255,0.05)]">
                            <div className="flex items-center gap-2">
                              <div className="flex gap-1">
                                <span className="w-2 h-2 rounded-full bg-[#5de6ff] animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -525,7 +555,7 @@ const MockInterviewPage = () => {
                          </div>
                        ) : (
                          <div
-                           className={`rounded-2xl px-5 py-4 max-w-[70%] text-sm leading-relaxed whitespace-pre-wrap relative group ${
+                           className={`rounded-2xl px-5 py-4 max-w-[85%] sm:max-w-[70%] text-sm leading-relaxed whitespace-pre-wrap relative group ${
                              msg.type === 'ai'
                                ? 'glass-surface-low rounded-tl-md border border-[rgba(255,255,255,0.05)] text-[#e2e8f0]'
                                : 'bg-gradient-to-br from-[rgba(192,193,255,0.15)] to-[rgba(93,230,255,0.08)] rounded-tr-md border border-[rgba(192,193,255,0.15)] text-white'
