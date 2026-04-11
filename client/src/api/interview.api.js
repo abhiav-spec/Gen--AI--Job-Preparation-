@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { getAccessToken, refreshAccessToken, setAccessToken } from './auth.api';
 
-const BASE_URL = 'http://localhost:3000/api/interview';
+const BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api') + '/interview';
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -95,5 +95,13 @@ export const downloadInterviewReport = (reportId) =>
 // DELETE /report/:reportId — delete report permanently
 export const deleteInterviewReport = (reportId) =>
   api.delete(`/report/${reportId}`);
+
+// GET /public/report/:reportId — Get public report details
+export const getPublicInterviewReport = (reportId) =>
+  api.get(`/public/report/${reportId}`);
+
+// GET /public/download-report/:reportId — Download public report PDF
+export const downloadPublicInterviewReport = (reportId) =>
+  api.get(`/public/download-report/${reportId}`, { responseType: 'blob' });
 
 export default api;

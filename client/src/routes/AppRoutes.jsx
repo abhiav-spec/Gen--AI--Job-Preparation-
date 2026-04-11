@@ -13,6 +13,7 @@ import DashboardPage from '../pages/DashboardPage.jsx';
 import ReportGeneratorPage from '../pages/ReportGeneratorPage.jsx';
 import ReportDetailPage from '../pages/ReportDetailPage.jsx';
 import ViewReportPage from '../pages/ViewReportPage.jsx';
+import PublicReportView from '../pages/PublicReportView.jsx';
 
 // Mock Interview Pages
 import MockInterviewsListPage from '../pages/MockInterviewsListPage.jsx';
@@ -46,6 +47,7 @@ const AppRoutes = () => {
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
         <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/public/report/:id" element={<PublicReportView />} />
 
         {/* Protected Routes */}
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

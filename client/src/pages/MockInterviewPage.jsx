@@ -164,7 +164,11 @@ const MockInterviewPage = () => {
       }
     } catch (err) {
       console.error('Failed to fetch session:', err);
-      setError('Failed to load interview session.');
+      if (err.response?.status === 401) {
+        navigate('/login', { state: { from: location.pathname } });
+      } else {
+        setError('Failed to load interview session.');
+      }
     }
   }, [sessionId, navigate]);
 
@@ -317,32 +321,45 @@ const MockInterviewPage = () => {
     }
   };
 
-  // Timer logic
+  // Timer logic - Refactored to handle clock skew
+  const [timeLeftSet, setTimeLeftSet] = useState(false);
+
   useEffect(() => {
-    if (!startedAt || !duration || interviewEnded) return;
+    if (!startedAt || !duration || interviewEnded || timeLeftSet) return;
     
-    const startTime = new Date(startedAt).getTime();
-    if (isNaN(startTime)) return;
-
-    const endTime = startTime + duration * 60 * 1000;
-
-    const updateTimer = () => {
-      const now = Date.now();
-      const remaining = Math.max(0, Math.floor((endTime - now) / 1000));
-      setTimeLeft(remaining);
-      setTimerWarning(remaining <= 120 && remaining > 0);
-
-      if (remaining <= 0) {
-        handleEndInterview('Time limit exceeded');
-      }
-    };
-
-    // Initial update
-    updateTimer();
+    const startTimeServer = new Date(startedAt).getTime();
+    const nowServer = Date.now(); // Local approximation
+    const elapsedSeconds = Math.max(0, Math.floor((nowServer - startTimeServer) / 1000));
     
-    const interval = setInterval(updateTimer, 1000);
+    // If elapsed time is suspiciously high or negative, assume it's a fresh start
+    // otherwise use the server-synced elapsed time
+    const initialRemaining = Math.max(0, (duration * 60) - elapsedSeconds);
+    
+    setTimeLeft(initialRemaining);
+    setTimeLeftSet(true);
+  }, [startedAt, duration, interviewEnded, timeLeftSet]);
+
+  useEffect(() => {
+    if (!timeLeftSet || interviewEnded || timeLeft <= 0) return;
+
+    const interval = setInterval(() => {
+      setTimeLeft(prev => {
+        const next = Math.max(0, prev - 1);
+        if (next <= 0) {
+          handleEndInterview('Time limit exceeded');
+          clearInterval(interval);
+        }
+        return next;
+      });
+    }, 1000);
+
     return () => clearInterval(interval);
-  }, [startedAt, duration, interviewEnded, handleEndInterview]);
+  }, [timeLeftSet, interviewEnded, handleEndInterview, timeLeft]);
+
+  // Warning logic
+  useEffect(() => {
+    setTimerWarning(timeLeft <= 120 && timeLeft > 0);
+  }, [timeLeft]);
 
   // Format time helper
   const formatTime = (seconds) => {
@@ -365,18 +382,17 @@ const MockInterviewPage = () => {
   return (
     <div className="min-h-screen text-white flex overflow-hidden font-inter relative z-10">
       <div className="flex w-full min-h-screen">
-        <div className="w-[300px] h-full relative hidden xl:block z-50">
-          <Sidebar />
-        </div>
+        <div className="hidden xl:block w-[280px] flex-shrink-0" aria-hidden="true" />
+        <Sidebar />
 
         <main className="flex-1 min-h-screen relative z-10 flex flex-col">
           {/* Top Bar */}
           <motion.div
             initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className="glass-surface border-b border-[rgba(255,255,255,0.05)] px-6 py-4 flex items-center justify-between flex-shrink-0"
+            className="glass-surface border-b border-[rgba(255,255,255,0.05)] px-6 py-4 flex items-center justify-between flex-shrink-0 pl-16 xl:pl-6"
           >
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl ai-gradient-bg flex items-center justify-center shadow-[0_0_15px_rgba(93,230,255,0.3)]">
                 <Mic className="text-[#0c0c1d]" size={18} />
               </div>

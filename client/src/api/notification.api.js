@@ -1,17 +1,7 @@
-import axios from 'axios';
+import api from './auth.api';
 
-const API_URL = 'http://localhost:3000/api/notifications';
+const BASE_URL = '/notifications'; // Base URL is handled by the api instance
 
-// Helper for authorized requests
-const getAuthHeaders = () => {
-    const token = localStorage.getItem('token');
-    return {
-        headers: {
-            'Authorization': `Bearer ${token}`
-        }
-    };
-};
-
-export const getNotifications = () => axios.get(`${API_URL}/all`, getAuthHeaders());
-export const markAsRead = (id) => axios.patch(`${API_URL}/${id}/read`, {}, getAuthHeaders());
-export const markAllAsRead = () => axios.patch(`${API_URL}/all/read`, {}, getAuthHeaders());
+export const getNotifications = () => api.get(`${BASE_URL}/all`);
+export const markAsRead = (id) => api.patch(`${BASE_URL}/${id}/read`);
+export const markAllAsRead = () => api.patch(`${BASE_URL}/all/read`);

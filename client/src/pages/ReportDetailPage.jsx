@@ -53,7 +53,7 @@ const ReportDetailPage = () => {
   return (
     <div className="min-h-screen text-white flex overflow-hidden font-inter relative z-10">
       {/* Background is handled globally by ThreeBackground in App.jsx */}
-      <div className="w-75 h-full relative hidden xl:block z-50"><Sidebar /></div>
+      <div className="hidden xl:block w-[280px] flex-shrink-0" aria-hidden="true" /><Sidebar />
 
       <main className="flex-1 h-full overflow-y-auto overflow-x-hidden relative scroll-smooth px-6 xl:px-8 pb-12 z-10 custom-scrollbar">
         <div className="max-w-300 mx-auto w-full pt-12">

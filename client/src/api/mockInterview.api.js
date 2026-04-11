@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { getAccessToken, refreshAccessToken, setAccessToken } from './auth.api';
 
-const BASE_URL = 'http://localhost:3000/api/mock-interview';
+const BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api') + '/mock-interview';
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -95,5 +95,17 @@ export const getAllMockSessions = () =>
 // DELETE /:sessionId — Delete session permanently
 export const deleteMockInterview = (sessionId) =>
   api.delete(`/${sessionId}`);
+
+// GET /:sessionId/download — Download the PDF analysis report
+export const downloadMockInterviewReport = (sessionId) =>
+  api.get(`/${sessionId}/download`, { responseType: 'blob' });
+
+// GET /public/:sessionId — Get public mock session details
+export const getPublicMockSession = (sessionId) =>
+  api.get(`/public/${sessionId}`);
+
+// GET /public/:sessionId/download — Download public mock PDF
+export const downloadPublicMockReport = (sessionId) =>
+  api.get(`/public/${sessionId}/download`, { responseType: 'blob' });
 
 export default api;

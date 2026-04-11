@@ -16,6 +16,8 @@ console.log('GOOGLE_USER:', process.env.GOOGLE_USER);
 const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI;
 const port = Number(process.env.PORT || 3000);
 const jwtSecret = process.env.JWT_SECRET;
+const groqApiKey = process.env.GROQ_API_KEY;
+const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
 
 if (!mongoUri) {
 	console.error('Missing MONGODB_URI (or MONGO_URI) in environment variables');
@@ -31,6 +33,8 @@ const config = {
 	PORT: port,
 	MONGODB_URI: mongoUri,
 	JWT_SECRET: jwtSecret,
+	GROQ_API_KEY: groqApiKey,
+	CLIENT_URL: clientUrl,
 	GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
 	GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
 	GOOGLE_REFRESH_TOKEN: process.env.GOOGLE_REFRESH_TOKEN,

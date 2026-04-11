@@ -9,8 +9,9 @@ import {
   Activity, Zap, Smile
 } from 'lucide-react';
 import Sidebar from '../components/dashboard/Sidebar';
-import { getMockSession, deleteMockInterview } from '../api/mockInterview.api';
+import { getMockSession, deleteMockInterview, downloadMockInterviewReport } from '../api/mockInterview.api';
 import { Trash2, Loader2 } from 'lucide-react';
+import SharePDF from '../components/ui/SharePDF';
 
 // Circular score gauge
 const ScoreGauge = ({ label, score, color, delay = 0 }) => {
@@ -160,7 +161,8 @@ const MockInterviewReportPage = () => {
     return (
       <div className="min-h-screen text-white flex overflow-hidden font-inter relative z-10">
         <div className="flex w-full min-h-screen">
-          <div className="w-[300px] h-full relative hidden xl:block z-50"><Sidebar /></div>
+          <div className="hidden xl:block w-[280px] flex-shrink-0" aria-hidden="true" />
+          <Sidebar />
           <main className="flex-1 flex items-center justify-center">
             <div className="text-center">
               <div className="spinner mx-auto mb-4" style={{ width: 40, height: 40 }} />
@@ -176,7 +178,8 @@ const MockInterviewReportPage = () => {
     return (
       <div className="min-h-screen text-white flex overflow-hidden font-inter relative z-10">
         <div className="flex w-full min-h-screen">
-          <div className="w-[300px] h-full relative hidden xl:block z-50"><Sidebar /></div>
+          <div className="hidden xl:block w-[280px] flex-shrink-0" aria-hidden="true" />
+          <Sidebar />
           <main className="flex-1 flex items-center justify-center">
             <div className="text-center glass-surface rounded-[2rem] p-12 border border-[rgba(255,255,255,0.05)]">
               <AlertTriangle size={48} className="mx-auto text-red-400 mb-4" />
@@ -202,9 +205,8 @@ const MockInterviewReportPage = () => {
   return (
     <div className="min-h-screen text-white flex overflow-hidden font-inter relative z-10">
       <div className="flex w-full min-h-screen">
-        <div className="w-[300px] h-full relative hidden xl:block z-50">
-          <Sidebar />
-        </div>
+        <div className="hidden xl:block w-[280px] flex-shrink-0" aria-hidden="true" />
+        <Sidebar />
 
         <main className="flex-1 min-h-full relative scroll-smooth px-4 sm:px-6 xl:px-8 pb-12 z-10 overflow-x-hidden overflow-y-auto">
           <div className="max-w-[900px] mx-auto w-full pt-8">
@@ -245,6 +247,14 @@ const MockInterviewReportPage = () => {
                       {difficulty}
                     </span>
                     <span className="text-xs text-[#94a3b8]">{answeredCount} questions answered</span>
+                  </div>
+                  <div className="mt-6 flex items-center gap-3">
+                    <SharePDF 
+                      title={`Mock Interview Results: ${role}`}
+                      text={`I scored ${overallPercent}% in a ${difficulty} difficulty ${role} technical interview with HireStack's Vision AI tracker. View my full behavioral and technical analysis!`}
+                      url={`${window.location.origin}/public/report/${sessionId}?type=mock`}
+                      downloadAction={() => downloadMockInterviewReport(sessionId)}
+                    />
                   </div>
                 </div>
 

@@ -108,7 +108,9 @@ const useSpeech = () => {
       if (onEnd) onEnd();
     };
     utterance.onerror = (err) => {
-      console.error('Speech synthesis error:', err);
+      if (err.error !== 'interrupted') {
+        console.error('Speech synthesis error:', err);
+      }
       setIsSpeaking(false);
     };
 

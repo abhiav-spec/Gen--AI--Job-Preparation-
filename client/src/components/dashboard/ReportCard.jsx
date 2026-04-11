@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { FileText, Download, ChevronRight, Share2, Activity, Mic } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { downloadInterviewReport } from '../../api/interview.api';
+import { downloadMockInterviewReport } from '../../api/mockInterview.api';
+import SharePDF from '../ui/SharePDF';
 
 const ReportCard = ({ role, score, date, reportId, index, type = 'report' }) => {
   const navigate = useNavigate();
@@ -107,9 +109,22 @@ const ReportCard = ({ role, score, date, reportId, index, type = 'report' }) => 
             {downloading ? <Activity size={18} className="animate-spin" /> : <Download size={18} />}
           </button>
         )}
-        <button className="flex items-center justify-center p-3 rounded-xl glass-surface-low border border-outline-variant text-[#94a3b8] hover:text-white hover:border-[rgba(255,255,255,0.3)] transition-all">
-          <Share2 size={18} />
-        </button>
+        <SharePDF 
+          isIconOnly={true}
+          title={type === 'mock' ? `Mock Interview: ${role}` : `Interview Report: ${role}`}
+          text={type === 'mock' 
+            ? `I just scored ${score}% in a mock interview for ${role}! Check out my detailed feedback at HireStack AI.`
+            : `I've optimized my professional profile for the ${role} position using HireStack AI. See the full analysis here.`
+          }
+          url={type === 'mock' 
+            ? `${window.location.origin}/public/report/${reportId}?type=mock`
+            : `${window.location.origin}/public/report/${reportId}?type=analysis`
+          }
+          downloadAction={type === 'mock' 
+            ? () => downloadMockInterviewReport(reportId) 
+            : () => downloadInterviewReport(reportId)
+          }
+        />
         {/* Primary/Tertiary mix button */}
         <button 
           onClick={handleReview}

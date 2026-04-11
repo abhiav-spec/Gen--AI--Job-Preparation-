@@ -5,6 +5,8 @@ import {
     generateFinalReport,
 } from '../services/mockInterview.service.js';
 import { createNotification } from './notification.controller.js';
+import { generatePdfFromHtml } from '../services/ai.service.js';
+import { generateReportHtml } from '../utils/reportTemplate.js';
 
 // ─── Start a new mock interview session ──────────────────────────────────────
 
@@ -251,6 +253,20 @@ async function getSession(req, res) {
 
 // ─── Get all sessions for the current user ───────────────────────────────────
 
+async function getPublicMockSession(req, res) {
+    try {
+        const { sessionId } = req.params;
+        const session = await MockInterview.findById(sessionId)
+            .select('-user -__v');
+        if (!session || session.status !== 'completed') {
+            return res.status(404).json({ error: 'Public interview report not found.' });
+        }
+        return res.status(200).json({ success: true, data: session });
+    } catch (error) {
+        return res.status(500).json({ error: 'Failed to fetch public report.' });
+    }
+}
+
 async function getAllSessions(req, res) {
     try {
         const sessions = await MockInterview.find({ user: req.user.id })
@@ -268,6 +284,43 @@ async function getAllSessions(req, res) {
 }
 
 // ─── Delete a session permanently ───────────────────────────────────────────
+
+async function downloadMockReport(req, res) {
+    try {
+        const { sessionId } = req.params;
+        const session = await MockInterview.findById(sessionId);
+
+        if (!session || !session.finalReport) {
+            return res.status(404).json({ error: 'Completed interview session not found.' });
+        }
+
+        const reportHtml = generateReportHtml({
+            type: 'mock',
+            role: session.role,
+            difficulty: session.difficulty,
+            score: session.finalReport.score,
+            behaviorMetrics: session.behaviorMetrics,
+            qaHistory: session.qaHistory,
+            // Map finalReport fields if they exist
+            strengths: session.finalReport.strengths,
+            weaknesses: session.finalReport.weaknesses,
+            technicalQuestions: [{ question: 'Technical Feedback', answer: session.finalReport.technicalQuestions }],
+            behavioralQuestions: [{ question: 'Behavioral Feedback', answer: session.finalReport.behavioralQuestions }],
+        });
+
+        const pdfBuffer = await generatePdfFromHtml(reportHtml);
+
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `attachment; filename=mock_interview_${sessionId}.pdf`,
+        });
+
+        return res.send(pdfBuffer);
+    } catch (error) {
+        console.error('Error downloading mock report:', error);
+        return res.status(500).json({ error: 'Failed to generate PDF report.' });
+    }
+}
 
 async function deleteInterview(req, res) {
     try {
@@ -294,4 +347,4 @@ async function deleteInterview(req, res) {
     }
 }
 
-export { startInterview, submitAnswer, endInterview, getSession, getAllSessions, deleteInterview };
+export { startInterview, submitAnswer, endInterview, getSession, getAllSessions, deleteInterview, downloadMockReport, getPublicMockSession };

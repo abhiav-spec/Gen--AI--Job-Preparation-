@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = 'http://localhost:3000/api/auth';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -98,30 +98,30 @@ api.interceptors.response.use(
 // ─── Auth API ───────────────────────────────────────────────────────────────
 
 export const registerUser = (data) =>
-  api.post('/register', data);
+  api.post('/auth/register', data);
 
 export const loginUser = (data) =>
-  api.post('/login', data);
+  api.post('/auth/login', data);
 
 export const verifyEmail = (data) =>
-  api.post('/verify-email', data);
+  api.post('/auth/verify-email', data);
 
 export const resendOtp = (data) =>
-  api.post('/resend-otp', data);
+  api.post('/auth/resend-otp', data);
 
 export const refreshAccessToken = () =>
-  api.post('/refresh-token');
+  api.post('/auth/refresh-token');
 
 export const getProfile = () =>
-  api.get('/profile');
+  api.get('/auth/profile');
 
 export const logoutUser = () =>
-  api.post('/logout');
+  api.post('/auth/logout');
 
 export const logoutAllDevices = () =>
-  api.post('/logout-all');
+  api.post('/auth/logout-all');
 
 export const updateUserProfile = (data) =>
-  api.patch('/profile', data);
+  api.patch('/auth/profile', data);
 
 export default api;

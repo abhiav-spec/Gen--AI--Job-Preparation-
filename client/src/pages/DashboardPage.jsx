@@ -96,10 +96,10 @@ const DashboardPage = () => {
       {/* Main Container */}
       <div className="flex w-full min-h-screen">
         
-        {/* Left Sidebar Fixed Width Container */}
-        <div className="w-[300px] h-full relative hidden xl:block z-50">
-          <Sidebar />
-        </div>
+        {/* Sidebar — handles both xl desktop fixed sidebar + mobile drawer */}
+        {/* The xl:block hidden div reserves layout space for the desktop sidebar */}
+        <div className="hidden xl:block w-[280px] flex-shrink-0" aria-hidden="true" />
+        <Sidebar />
 
         {/* Main Content Area */}
         <main className="flex-1 min-h-full relative scroll-smooth px-4 sm:px-6 xl:px-8 pb-12 z-10 overflow-x-hidden">

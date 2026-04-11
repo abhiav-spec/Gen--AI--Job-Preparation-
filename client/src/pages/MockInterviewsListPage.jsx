@@ -80,11 +80,11 @@ const MockInterviewsListPage = () => {
   return (
     <div className="min-h-screen text-white flex overflow-hidden font-inter relative z-10">
       <div className="flex w-full min-h-screen">
-        <div className="w-[300px] h-full relative hidden xl:block z-50">
+          {/* Spacer for fixed desktop sidebar */}
+          <div className="hidden xl:block w-[280px] flex-shrink-0" aria-hidden="true" />
           <Sidebar />
-        </div>
 
-        <main className="flex-1 min-h-full relative scroll-smooth px-4 sm:px-6 xl:px-8 pb-12 z-10 overflow-x-hidden">
+          <main className="flex-1 min-h-full relative scroll-smooth px-4 sm:px-6 xl:px-8 pb-12 z-10 overflow-x-hidden">
           <div className="max-w-[1200px] mx-auto w-full">
             <DashboardHeader />
 

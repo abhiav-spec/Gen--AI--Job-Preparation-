@@ -16,6 +16,7 @@ import {
   deleteInterviewReport
 } from '../api/interview.api';
 import Loader from '../components/ui/Loader';
+import SharePDF from '../components/ui/SharePDF';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sub-components
@@ -236,8 +237,9 @@ const ViewReportPage = () => {
 
   return (
     <div className="min-h-screen text-white flex overflow-hidden font-inter relative z-10">
-      {/* Sidebar */}
-      <div className="w-[300px] h-full relative hidden xl:block z-50"><Sidebar /></div>
+      {/* Spacer for fixed desktop sidebar */}
+      <div className="hidden xl:block w-[280px] flex-shrink-0" aria-hidden="true" />
+      <Sidebar />
 
       <main className="flex-1 h-full overflow-y-auto overflow-x-hidden relative scroll-smooth px-4 xl:px-8 pb-12 z-10 custom-scrollbar">
         <div className="max-w-[1400px] mx-auto w-full pt-10">
@@ -254,12 +256,22 @@ const ViewReportPage = () => {
                 <h1 className="font-space text-4xl font-bold tracking-tighter text-white mb-1">View Report</h1>
                 <p className="text-[#94a3b8] text-sm">Review your AI-generated interview analysis and optimized resume.</p>
               </div>
-              <button
-                onClick={() => navigate('/dashboard/report-generator')}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl ai-gradient-bg text-[#0c0c1d] font-space font-bold uppercase tracking-widest text-xs hover:shadow-[0_0_20px_rgba(93,230,255,0.4)] transition-all"
-              >
-                <Zap size={14} /> New Report
-              </button>
+              <div className="flex items-center gap-3">
+                {selectedId && report && (
+                  <SharePDF 
+                    title={`AI Interview Analysis: ${report.title || 'Report'}`}
+                    text={`I've achieved a ${report.matchScore}% job match for the ${report.title || 'target'} role using HireStack AI's neural platform. See my optimized resume and prep plan!`}
+                    url={`${window.location.origin}/public/report/${selectedId}?type=analysis`}
+                    downloadAction={() => downloadInterviewReport(selectedId)}
+                  />
+                )}
+                <button
+                  onClick={() => navigate('/dashboard/report-generator')}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl ai-gradient-bg text-[#0c0c1d] font-space font-bold uppercase tracking-widest text-xs hover:shadow-[0_0_20px_rgba(93,230,255,0.4)] transition-all"
+                >
+                  <Zap size={14} /> New Report
+                </button>
+              </div>
             </div>
           </div>
 

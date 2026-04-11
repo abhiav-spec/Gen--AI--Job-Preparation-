@@ -2,6 +2,7 @@ import { PDFParse as pdfparse } from 'pdf-parse';
 import { generateInterviewReport, generateResumePdf, generatePdfFromHtml } from '../services/ai.service.js';
 import interiviewReportModel from '../models/interviewReport.model.js';
 import { createNotification } from './notification.controller.js';
+import { generateReportHtml } from '../utils/reportTemplate.js';
 
 function normalizeSkillGap(gap) {
     if (!gap || typeof gap !== 'object') {
@@ -184,6 +185,20 @@ async function getinterviewreport(req,res) {
     }
 }
 
+async function getPublicInterviewReport(req, res) {
+    const reportId = req.params.reportId;
+    try {
+        const report = await interiviewReportModel.findById(reportId)
+            .select('-user -__v'); // Don't leak user ID
+        if (!report) {
+            return res.status(404).json({ error: 'Report not found' });
+        }
+        return res.status(200).json({ success: true, data: report });
+    } catch (error) {
+        return res.status(500).json({ error: 'Failed to retrieve public report' });
+    }
+}
+
 async function getAllInterviewReports(req,res) {
     // --- MOCK FALLBACK FOR DEVELOPMENT ---
     const isMockUser = req.user.id === '65f1a2b3c4d5e6f7a8b9c0d1';
@@ -237,23 +252,28 @@ async function downloadInterviewReport(req, res) {
     const reportId = req.params.reportId;
 
     try {
-        const report = await interiviewReportModel.findOne({ _id: reportId, user: req.user.id });
+        // Allow fallback to public check if not authenticated or if we want to allow sharing
+        const report = await interiviewReportModel.findOne({ _id: reportId });
         if (!report) {
             return res.status(404).json({ error: 'Interview report not found' });
         }
 
-        let pdfContent;
+        const fullReportHtml = generateReportHtml({
+            type: 'analysis',
+            title: report.title,
+            matchScore: report.matchScore,
+            technicalQuestions: report.technicalQuestions,
+            behavioralQuestions: report.behavioralQuestions,
+            skillGaps: report.skillGaps,
+            preparationPlan: report.preparationPlan
+        });
 
-        if (report.generatedResumeHtml) {
-            pdfContent = await generatePdfFromHtml(report.generatedResumeHtml);
-        } else {
-            const generated = await generateResumePdf({
-                resume: report.resume,
-                selfDescription: report.selfDescription,
-                jobDescription: report.jobDescription,
-            });
-            pdfContent = generated.pdfBuffer;
-        }
+        // Append the resume HTML at the end if it exists
+        const combinedHtml = report.generatedResumeHtml 
+            ? fullReportHtml + `<div style="page-break-before: always;"></div>` + report.generatedResumeHtml
+            : fullReportHtml;
+
+        const pdfContent = await generatePdfFromHtml(combinedHtml);
 
         res.set({
             'Content-Type': 'application/pdf',
@@ -291,5 +311,6 @@ export {
     getAllInterviewReports, 
     downloadInterviewReport, 
     deleteInterviewReport,
+    getPublicInterviewReport,
     normalizeReportPayload 
 }
