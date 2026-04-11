@@ -5,6 +5,20 @@ import jwt from 'jsonwebtoken';
 import sendEmail from '../services/email.services.js';
 import { generateOTP, getOtpHtml } from '../utils/otp.util.js';
 import Otp from '../models/otp.model.js';
+import config from '../config/config.js';
+
+const refreshCookieOptions = {
+    httpOnly: true,
+    secure: config.COOKIE_SECURE,
+    sameSite: config.COOKIE_SAME_SITE,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+
+const refreshCookieClearOptions = {
+    httpOnly: true,
+    secure: config.COOKIE_SECURE,
+    sameSite: config.COOKIE_SAME_SITE,
+};
 
  const registerUser = async (req, res) => {
     try {
@@ -18,12 +32,7 @@ import Otp from '../models/otp.model.js';
         const user = await User.create({ username, email, password: hashedPassword });
 
         const refreshtoken=jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-        res.cookie('refreshToken', refreshtoken, { 
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000 
-        });
+        res.cookie('refreshToken', refreshtoken, refreshCookieOptions);
 
         const refreshtokenhash = crypto.createHash('sha256').update(refreshtoken).digest('hex');
         const session = await Session.create({
@@ -116,12 +125,7 @@ const refreshToken = async (req, res) => {
         const newRefreshTokenHash = crypto.createHash('sha256').update(newRefreshToken).digest('hex');
         session.refreshToken = newRefreshTokenHash;
         await session.save();
-        res.cookie('refreshToken', newRefreshToken, { 
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000
-        });
+        res.cookie('refreshToken', newRefreshToken, refreshCookieOptions);
         return res.status(200).json({
             accessToken,
             user: {
@@ -154,11 +158,7 @@ const logout = async (req, res) => {
     session.revoked = true;
     await session.save();
     
-    res.clearCookie('refreshToken', { 
-        httpOnly: true,
-        secure:true,
-        sameSite:'strict',
-    });
+    res.clearCookie('refreshToken', refreshCookieClearOptions);
     res.status(200).json({ message: 'Logout successful' });
 
    }catch(error){
@@ -176,11 +176,7 @@ const logoutAll = async (req, res) => {
     const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
     const userId = decoded.id;
     await Session.updateMany({ user: userId }, { revoked: true });
-    res.clearCookie('refreshToken', { 
-        httpOnly: true,
-        secure:true,
-        sameSite:'strict',
-    });
+    res.clearCookie('refreshToken', refreshCookieClearOptions);
     res.status(200).json({ message: 'Logged out from all sessions successfully' });
  }
  catch(error){
@@ -209,12 +205,7 @@ const login = async (req, res) => {
         }
 
         const refreshtoken=jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-        res.cookie('refreshToken', refreshtoken, { 
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000
-        });
+        res.cookie('refreshToken', refreshtoken, refreshCookieOptions);
 
         const refreshtokenhash = crypto.createHash('sha256').update(refreshtoken).digest('hex');
         const session = await Session.create({

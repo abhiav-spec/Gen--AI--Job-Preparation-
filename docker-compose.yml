@@ -1,0 +1,11 @@
+services:
+  server:
+    build:
+      context: .
+      dockerfile: dockerfile
+    image: server
+    env_file:
+      - ./.env
+    ports:
+      - "4000:3000"
+    restart: unless-stopped

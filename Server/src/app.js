@@ -1,5 +1,9 @@
 import express from 'express';
 import morgan from 'morgan';
+import helmet from 'helmet';
+import { rateLimit } from 'express-rate-limit';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import authRoutes from './routes/auth.route.js';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
@@ -9,16 +13,24 @@ import mockInterviewRouter from './routes/mockInterview.routes.js';
 import notificationRouter from './routes/notification.routes.js';
 import config from './config/config.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const publicDir = path.resolve(__dirname, '../public');
+
 
 const app = express();
+app.set('trust proxy', 1);
 
 const allowedOrigins = [
     config.CLIENT_URL,
+    ...(config.CORS_ORIGINS || []),
+    `http://localhost:${config.PORT}`,
+    `http://127.0.0.1:${config.PORT}`,
     'http://127.0.0.1:5173',
     'http://localhost:5173',
     'http://127.0.0.1:5174',
     'http://localhost:5174',
-];
+].filter(Boolean);
 
 const corsOptions = {
     origin: (origin, callback) => {
@@ -33,12 +45,35 @@ const corsOptions = {
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 };
 
+
+app.use(express.static(publicDir));
 app.use(cors(corsOptions));
 app.options(/.*/, cors(corsOptions));
 
+app.use(helmet());
 app.use(cookieParser());
-app.use(express.json());
-app.use(morgan('dev'));
+app.use(express.json({ limit: '1mb' }));
+app.use(morgan(config.NODE_ENV === 'production' ? 'combined' : 'dev'));
+
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: config.NODE_ENV === 'production' ? 250 : 1000,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many requests, please try again later.' },
+});
+
+app.use('/api', apiLimiter);
+
+app.get('/api/health', (req, res) => {
+    res.status(200).json({
+        status: 'ok',
+        environment: config.NODE_ENV,
+        uptimeSeconds: Math.floor(process.uptime()),
+        timestamp: new Date().toISOString(),
+    });
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/interview', interviewRouter);
 app.use('/api/mock-interview', mockInterviewRouter);
@@ -70,9 +105,23 @@ app.post('/api/generate-interview-report', async (req, res) => {
     }
 });
 
-app.get('/', (req, res) => {
-    res.send('Welcome to the Authentication System API');
+app.get('/api', (req, res) => {
+    res.status(200).json({
+        message: 'HireStack API is running',
+        health: '/api/health',
+    });
 });
 
+// SPA fallback: serve React app for all non-API GET requests
+app.get(/^\/(?!api).*/, (req, res) => {
+    res.sendFile(path.join(publicDir, 'index.html'));
+});
+
+
+app.use((err, req, res, next) => {
+    console.error(err);
+    if (res.headersSent) return next(err);
+    res.status(500).json({ error: 'Internal server error' });
+});
 
 export default app;
