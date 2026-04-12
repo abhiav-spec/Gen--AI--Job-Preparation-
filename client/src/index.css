@@ -17,7 +17,7 @@ html, body, #root {
 
 body {
   font-family: 'Inter', sans-serif;
-  background: #050817;
+  background: #060912; /* Deep Navy Black */
   color: #e2e8f0;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
@@ -232,17 +232,18 @@ body {
 /* ===== The Kinetic Ether Theme ===== */
 
 @theme {
-  --color-surface-dim: #121223;
-  --color-surface-lowest: #0c0c1d;
-  --color-surface-low: #17172f;
-  --color-surface-container: rgba(255, 255, 255, 0.04);
-  --color-surface-container-high: rgba(255, 255, 255, 0.08);
-  --color-surface-container-highest: rgba(255, 255, 255, 0.12);
+  --color-surface-dim: #0B0F1A;
+  --color-surface-lowest: #060912;
+  --color-surface-low: #0F1525;
+  --color-surface-container: rgba(255, 255, 255, 0.02);
+  --color-surface-container-high: rgba(255, 255, 255, 0.04);
+  --color-surface-container-highest: rgba(255, 255, 255, 0.08);
   --color-surface-bright: #ffffff;
   
-  --color-primary: #c0c1ff;
+  --color-primary: #7C3AED;
+  --color-primary-light: #A855F7;
   --color-secondary: #5de6ff;
-  --color-outline-variant: rgba(255, 255, 255, 0.1);
+  --color-outline-variant: rgba(255, 255, 255, 0.06);
 
   --font-space: 'Space Grotesk', sans-serif;
   --font-inter: 'Inter', sans-serif;
@@ -254,15 +255,28 @@ body {
 }
 
 .glass-surface {
-  background: var(--color-surface-container-high);
+  background: rgba(15, 21, 37, 0.7);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .glass-surface-low {
-  background: var(--color-surface-container);
+  background: rgba(15, 21, 37, 0.4);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.premium-gradient-bg {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+}
+
+.premium-gradient-text {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .ai-gradient-text {
@@ -277,20 +291,23 @@ body {
 }
 
 .ai-glow-shadow {
-  box-shadow: 0 0 60px 6px rgba(192, 193, 255, 0.06);
+  box-shadow: 0 0 60px 6px rgba(124, 58, 237, 0.1);
+}
+
+.active-glow {
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.3);
 }
 
 .ai-glow-text {
-  text-shadow: 0 0 12px rgba(93, 230, 255, 0.4);
+  text-shadow: 0 0 12px rgba(168, 85, 247, 0.4);
 }
 
 .ai-button-glow:hover {
-  box-shadow: 0 0 8px 0px rgba(93, 230, 255, 0.3);
+  box-shadow: 0 0 15px 0px rgba(124, 58, 237, 0.4);
 }
 
-
 .ai-ghost-border {
-  box-shadow: inset 0 0 0 1px var(--color-outline-variant);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
 /* ===== Scrollbar Utilities ===== */

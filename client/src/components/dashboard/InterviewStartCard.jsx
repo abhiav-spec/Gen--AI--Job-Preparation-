@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Zap, ChevronRight } from 'lucide-react';
+import { Zap, ChevronRight, Bot, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const InterviewStartCard = () => {
@@ -7,54 +7,55 @@ const InterviewStartCard = () => {
 
   return (
     <motion.div
-      initial={{ scale: 0.95, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ duration: 1, ease: "easeOut" }}
-      className="relative overflow-hidden glass-surface rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-10 flex flex-col justify-between border border-[rgba(93,230,255,0.15)] shadow-[0_40px_100px_rgba(0,0,0,0.4),0_0_80px_rgba(93,230,255,0.05)] min-h-[340px] sm:min-h-[380px] group pb-12 sm:pb-16"
+      initial={{ scale: 0.98, opacity: 0, y: 10 }}
+      animate={{ scale: 1, opacity: 1, y: 0 }}
+      transition={{ duration: 0.8, ease: "easeOut" }}
+      className="relative overflow-hidden glass-surface rounded-[2.5rem] p-8 sm:p-12 flex flex-col justify-between border border-white/5 shadow-[0_40px_100px_rgba(0,0,0,0.6)] group h-full min-h-[420px]"
     >
-      {/* Animated Deep Space Background elements */}
-      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[radial-gradient(circle,rgba(93,230,255,0.1)_0%,transparent_60%)] -translate-x-[10%] -translate-y-[20%] opacity-50 blur-xl mix-blend-screen" />
-      <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-[radial-gradient(circle,rgba(192,193,255,0.1)_0%,transparent_70%)] opacity-40 blur-xl mix-blend-screen" />
-
+      {/* Background patterns */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[radial-gradient(circle,rgba(124,58,237,0.08)_0%,transparent_70%)] -translate-x-10 -translate-y-20 blur-3xl" />
+      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 hover:opacity-30 transition-opacity pointer-events-none" />
+      
       {/* Grid Pattern overlay */}
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+CjxwYXRoIGQ9Ik0wIDBINDBWMHoiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjAyKSIgc3Ryb2tlLXdpZHRoPSIxeHB4Ii8+Cjwvc3ZnPg==')] opacity-30"></div>
+      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+CjxwYXRoIGQ9Ik00MCAwIDAgMCAwIDQwIiBmaWxsPSJub25lIiBzdHJva2U9InJnYmEoMTY4LCA4NSwgMjQ3LCAwLjA1KSIgc3Ryb2tlLXdpZHRoPSIxIi8+Cjwvc3ZnPg==')] opacity-40"></div>
 
-      <div className="relative z-10 flex flex-col items-start gap-3 sm:gap-4">
-        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl sm:rounded-[1.5rem] glass-surface flex items-center justify-center bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.1)] shadow-[0_0_30px_rgba(93,230,255,0.2)] mb-2 sm:mb-4">
-          <Zap className="text-[#5de6ff] animate-pulse" size={24} />
+      <div className="relative z-10 flex flex-col items-start gap-6">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary/10 border border-secondary/20 mb-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse" />
+            <span className="text-[10px] font-bold text-secondary uppercase tracking-widest font-space">Active Session Ready</span>
         </div>
         
-        <h2 className="font-space text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white m-0">
-          Initiate <br className="hidden sm:block" /> <span className="ai-gradient-text drop-shadow-[0_0_12px_rgba(93,230,255,0.8)]">Simulation</span>
+        <h2 className="font-space text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-[1.1]">
+          Initiate <br /> 
+          <span className="premium-gradient-text drop-shadow-[0_0_15px_rgba(124,58,237,0.4)]">Recruitment</span> <br />
+          Simulation
         </h2>
         
-        <p className="font-inter text-[#94a3b8] text-sm sm:text-base leading-relaxed max-w-sm">
-          Run a fresh AI diagnostic on your latest skills. The neural engine is fully primed.
+        <p className="font-inter text-slate-400 text-sm sm:text-base leading-relaxed max-w-md">
+          Test your interview frameworks or generate detailed candidate performance reports using our AI-driven engine.
         </p>
       </div>
 
-      <div className="relative z-10 mt-8 sm:mt-10 flex flex-col sm:flex-row flex-wrap gap-4 sm:gap-6">
+      <div className="relative z-10 mt-12 flex flex-wrap gap-4 sm:gap-6">
         <motion.button
-          whileHover={{ scale: 1.02 }}
+          whileHover={{ scale: 1.02, y: -2 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => navigate('/dashboard/mock-interview/setup')}
-          className="group relative flex items-center justify-between px-6 sm:px-8 py-3.5 sm:py-4 bg-[#0c0c1d] text-[#5de6ff] border border-[#5de6ff]/30 rounded-xl sm:rounded-2xl font-inter font-bold text-sm sm:text-base overflow-hidden hover:bg-[#5de6ff]/10 hover:border-[#5de6ff]/60 transition-all duration-300 shadow-[0_0_20px_rgba(93,230,255,0.1)]"
+          className="group relative flex items-center gap-3 px-8 py-4 premium-gradient-bg text-white rounded-2xl font-space font-bold uppercase tracking-widest text-xs shadow-[0_10px_25px_rgba(124,58,237,0.3)] hover:shadow-[0_20px_40px_rgba(124,58,237,0.5)] transition-all"
         >
-          <span className="relative z-10 font-space tracking-wider uppercase text-xs">Mock Interview</span>
-          <ChevronRight className="ml-4 opacity-70 group-hover:opacity-100 transition-opacity relative z-10" size={18} />
+          <Bot size={18} />
+          Mock Interview
+          <ChevronRight className="ml-2 group-hover:translate-x-1 transition-transform" size={14} />
         </motion.button>
 
         <motion.button
-          whileHover={{ scale: 1.02, textShadow: "0 0 8px rgba(255,255,255,0.5)" }}
+          whileHover={{ scale: 1.02, backgroundColor: 'rgba(255,255,255,0.05)' }}
           whileTap={{ scale: 0.98 }}
           onClick={() => navigate('/dashboard/report-generator')}
-          className="group relative flex items-center justify-between px-6 sm:px-8 py-3.5 sm:py-4 bg-[linear-gradient(135deg,#c0c1ff_0%,#5de6ff_100%)] text-[#0c0c1d] rounded-xl sm:rounded-2xl font-inter font-bold text-sm sm:text-base overflow-hidden outline-none border-none ai-button-glow shadow-[0_0_30px_rgba(93,230,255,0.4)] transition-all duration-300 transform-gpu"
+          className="group relative flex items-center gap-3 px-8 py-4 bg-white/2 hover:bg-white/5 border border-white/10 text-white rounded-2xl font-space font-bold uppercase tracking-widest text-xs transition-all"
         >
-          {/* Shimmer effect */}
-          <div className="absolute inset-0 -translate-x-full group-hover:animate-shimmer bg-gradient-to-r from-transparent via-[rgba(255,255,255,0.4)] to-transparent" />
-          
-          <span className="relative z-10 font-space tracking-wider uppercase text-xs">Generate Report</span>
-          <ChevronRight className="ml-4 opacity-70 group-hover:opacity-100 transition-opacity relative z-10 flex-shrink-0" size={18} />
+          <FileText size={18} />
+          Generate Report
         </motion.button>
       </div>
     </motion.div>

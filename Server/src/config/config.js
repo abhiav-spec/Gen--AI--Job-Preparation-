@@ -42,8 +42,8 @@ const config = {
 	GOOGLE_REFRESH_TOKEN: process.env.GOOGLE_REFRESH_TOKEN,
 	GOOGLE_USER: process.env.GOOGLE_USER,
 	NODE_ENV: nodeEnv,
-	COOKIE_SAME_SITE: process.env.COOKIE_SAME_SITE || (nodeEnv === 'production' ? 'none' : 'lax'),
-	COOKIE_SECURE: process.env.COOKIE_SECURE ? process.env.COOKIE_SECURE === 'true' : nodeEnv === 'production',
+	COOKIE_SAME_SITE: process.env.COOKIE_SAME_SITE || 'lax',
+	COOKIE_SECURE: process.env.COOKIE_SECURE === 'true', // Default to false for HTTP testing
 };
 
 if (nodeEnv !== 'production') {

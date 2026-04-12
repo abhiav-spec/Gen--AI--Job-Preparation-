@@ -65,6 +65,15 @@ const VideoMonitor = ({
         setError('');
         try {
             console.log('[VideoMonitor] Requesting media stream...');
+
+            if (!window.isSecureContext) {
+                throw new Error('Insecure Context: Camera access requires HTTPS or localhost. If testing on an IP, please enable the Chrome flag.');
+            }
+
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                throw new Error('MediaDevices API not available. This usually happens on insecure connections (HTTP).');
+            }
+
             const userStream = await navigator.mediaDevices.getUserMedia({ 
                 video: { width: 640, height: 480, frameRate: { ideal: 15 } },
                 audio: false 

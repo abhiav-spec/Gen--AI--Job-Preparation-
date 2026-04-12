@@ -37,9 +37,9 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // Only retry 401s if we haven't already retried this request once
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
-        // Queue this request until refresh completes
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         }).then((token) => {
@@ -62,8 +62,7 @@ api.interceptors.response.use(
         }
       } catch (refreshError) {
         processQueue(refreshError, null);
-        // Clear tokens and redirect to login if refresh fails
-        // window.location.href = '/login'; 
+        console.error('CRITICAL: Token refresh loop detected or network error. Logging out.');
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

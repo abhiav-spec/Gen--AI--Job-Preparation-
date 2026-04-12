@@ -48,8 +48,9 @@ const MockInterviewSetupPage = () => {
   const [error, setError] = useState('');
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [isCameraReady, setIsCameraReady] = useState(false);
+  const [bypassVision, setBypassVision] = useState(false);
 
-  const canStart = role.trim() && jobDescription.trim() && isCameraReady;
+  const canStart = role.trim() && jobDescription.trim() && (isCameraReady || bypassVision);
 
   const handleStart = async () => {
     if (!canStart) return;
@@ -281,13 +282,21 @@ const MockInterviewSetupPage = () => {
                       <motion.div
                         initial={{ opacity: 0, scale: 0.98 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center gap-3 mb-6"
+                        className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6"
                       >
-                        <ShieldCheck className="text-yellow-500" size={18} />
-                        <div>
-                          <p className="text-[10px] font-bold text-yellow-500 uppercase tracking-widest leading-none mb-1">Mandatory Vision Check</p>
-                          <p className="text-[10px] text-yellow-500/70">Neural simulation requires camera and microphone permissions to proceed.</p>
+                        <div className="flex items-center gap-3">
+                          <ShieldCheck className="text-yellow-500" size={18} />
+                          <div>
+                            <p className="text-[10px] font-bold text-yellow-500 uppercase tracking-widest leading-none mb-1">Mandatory Vision Check</p>
+                            <p className="text-[10px] text-yellow-500/70">Neural simulation requires camera and microphone permissions to proceed.</p>
+                          </div>
                         </div>
+                        <button
+                          onClick={() => setBypassVision(true)}
+                          className="px-3 py-1.5 rounded-lg bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-500 text-[10px] font-space font-bold uppercase tracking-widest transition-all border border-yellow-500/30"
+                        >
+                          Bypass (For Testing)
+                        </button>
                       </motion.div>
                     )}
                     {error && (

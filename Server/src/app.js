@@ -77,7 +77,7 @@ app.use(morgan(config.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: config.NODE_ENV === 'production' ? 250 : 1000,
+    max: 1000,
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Too many requests, please try again later.' },

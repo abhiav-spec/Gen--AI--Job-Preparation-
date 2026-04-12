@@ -23,10 +23,9 @@ const SidebarContent = ({ onNavigate, user, handleLogout, setShowAbout }) => {
 
   const navItems = [
     { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/dashboard', exact: true },
-    { icon: <Bot size={20} />, label: 'Mock Interviews', path: '/dashboard/mock-interview', navPath: '/dashboard/mock-interviews', exact: false },
-    { icon: <FileText size={20} />, label: 'Report Generator', path: '/dashboard/report-generator', exact: true },
-    { icon: <PieChart size={20} />, label: 'View Report', path: '/dashboard/view-report', exact: true },
-    { icon: <Settings size={20} />, label: 'Settings', path: '/dashboard/settings', exact: true },
+    { icon: <Briefcase size={20} />, label: 'Analyse', path: '/dashboard/report-generator', exact: true },
+    { icon: <Bot size={20} />, label: 'Mock Interview', path: '/dashboard/mock-interview', exact: false },
+    { icon: <FileText size={20} />, label: 'Reports', path: '/dashboard/view-report', exact: true },
   ];
 
   return (
@@ -35,17 +34,17 @@ const SidebarContent = ({ onNavigate, user, handleLogout, setShowAbout }) => {
       <div>
         {/* Logo */}
         <div className="flex items-center gap-3 px-4 mb-10">
-          <div className="w-10 h-10 rounded-xl ai-gradient-bg flex items-center justify-center shadow-[0_0_15px_rgba(93,230,255,0.4)] flex-shrink-0">
-            <BrainCircuit className="text-[#0c0c1d]" size={22} />
+          <div className="w-10 h-10 rounded-xl premium-gradient-bg flex items-center justify-center shadow-[0_0_20px_rgba(124,58,237,0.4)] flex-shrink-0">
+            <BrainCircuit className="text-white" size={22} />
           </div>
           <div>
             <h1 className="font-space text-lg font-bold text-white tracking-tight leading-none">HireStack</h1>
-            <p className="text-[10px] uppercase text-[#c0c1ff] opacity-70 tracking-widest font-semibold mt-0.5">AI Intelligence</p>
+            <p className="text-[10px] uppercase text-primary-light opacity-80 tracking-widest font-semibold mt-0.5">Recruitment Suite</p>
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex flex-col gap-1.5" role="navigation" aria-label="Main navigation">
+        <nav className="flex flex-col gap-2" role="navigation" aria-label="Main navigation">
           {navItems.map((item, idx) => {
             const active = item.exact
               ? location.pathname === item.path
@@ -53,86 +52,66 @@ const SidebarContent = ({ onNavigate, user, handleLogout, setShowAbout }) => {
             return (
               <motion.button
                 key={idx}
-                onClick={() => onNavigate(item.navPath || item.path)}
-                whileHover={{ x: 3, backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
+                onClick={() => onNavigate(item.path)}
+                whileHover={{ x: 4, backgroundColor: 'rgba(255, 255, 255, 0.03)' }}
                 aria-current={active ? 'page' : undefined}
-                className={`flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-200 relative text-left w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5de6ff]/50 ${ 
+                className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl transition-all duration-300 relative text-left w-full focus:outline-none ${ 
                   active 
-                    ? 'bg-[rgba(192,193,255,0.1)] text-white ai-ghost-border' 
-                    : 'text-[#94a3b8] hover:text-[#c0c1ff]'
+                    ? 'premium-gradient-bg text-white active-glow' 
+                    : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <span className={`flex-shrink-0 ${active ? 'text-[#5de6ff] ai-glow-text' : ''}`}>
+                <span className={`flex-shrink-0 ${active ? 'text-white' : 'group-hover:text-white'}`}>
                   {item.icon}
                 </span>
-                <span className="font-inter font-medium text-sm">{item.label}</span>
-                {active && (
-                  <motion.div
-                    layoutId="activeIndicator"
-                    className="absolute right-3 w-1.5 h-5 rounded-full ai-gradient-bg shadow-[0_0_10px_rgba(93,230,255,0.5)]"
-                  />
-                )}
+                <span className="font-inter font-semibold text-sm tracking-tight">{item.label}</span>
               </motion.button>
             );
           })}
         </nav>
       </div>
 
-      {/* Bottom: About, Social, Logout, Profile */}
-      <div>
-        {/* Info / Social */}
-        <div className="px-4 mb-5 flex flex-col gap-3 pt-5 border-t border-[rgba(255,255,255,0.05)]">
-          <button 
-            onClick={() => setShowAbout(true)}
-            className="flex items-center gap-3 text-[#94a3b8] hover:text-[#c0c1ff] transition-colors group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5de6ff]/50 rounded-lg"
-            aria-label="About HireStack"
-          >
-            <Info size={17} className="group-hover:text-[#5de6ff] transition-colors" />
-            <span className="text-xs font-semibold font-inter">About Us</span>
-          </button>
-          
-          <div className="flex flex-col gap-2">
-            <span className="text-[9px] uppercase font-bold text-[#94a3b8] tracking-widest pl-0.5">Follow Us</span>
-            <div className="flex gap-2">
-              <a href="https://github.com" target="_blank" rel="noreferrer"
-                aria-label="GitHub"
-                className="p-2 rounded-lg bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] text-[#94a3b8] hover:text-[#5de6ff] hover:border-[rgba(93,230,255,0.25)] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5de6ff]/50">
-                <Code size={14} />
-              </a>
-              <a href="https://linkedin.com" target="_blank" rel="noreferrer"
-                aria-label="LinkedIn"
-                className="p-2 rounded-lg bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] text-[#c0c1ff] hover:text-white hover:border-[rgba(192,193,255,0.25)] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5de6ff]/50">
-                <Briefcase size={14} />
-              </a>
-            </div>
-          </div>
+      {/* Bottom Actions */}
+      <div className="flex flex-col gap-6">
+        {/* Create New Job Button */}
+        <div className="px-2">
+            <motion.button
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => onNavigate('/dashboard/report-generator')}
+                className="w-full py-4 rounded-2xl premium-gradient-bg text-white font-space font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-[0_10px_25px_rgba(124,58,237,0.3)] hover:shadow-[0_15px_35px_rgba(124,58,237,0.5)] transition-all"
+            >
+                <Briefcase size={16} />
+                Analyse
+            </motion.button>
         </div>
 
-        {/* Logout */}
-        <div className="px-4">
-          <motion.button
-            whileHover={{ x: 3 }}
-            onClick={handleLogout}
-            className="flex items-center gap-4 py-3 px-4 w-full rounded-xl text-[#94a3b8] hover:text-[#ef4444] transition-colors group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5de6ff]/50"
-            aria-label="Logout"
-          >
-            <LogOut size={18} className="flex-shrink-0 transition-colors" />
-            <span className="font-inter font-medium text-sm">Logout</span>
-          </motion.button>
-
-          {/* User Mini Profile */}
-          <div className="mt-4 flex items-center gap-3 p-3 rounded-2xl glass-surface-low ai-ghost-border">
-            <div className="w-9 h-9 rounded-full overflow-hidden border border-[rgba(255,255,255,0.2)] flex-shrink-0">
-              <img 
-                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user?.username || 'U')}&background=random`} 
-                alt={user?.username || 'User avatar'} 
-              />
-            </div>
-            <div className="flex flex-col text-left min-w-0">
-              <span className="text-sm font-semibold text-white truncate">{user?.username || 'User'}</span>
-              <span className="text-[10px] text-[#c0c1ff]">Standard Member</span>
-            </div>
+        {/* Footer info & Logout */}
+        <div className="px-2 pt-6 border-t border-white/5">
+          <div className="flex flex-col gap-1 mb-4">
+             <button 
+                onClick={() => setShowAbout(true)}
+                className="flex items-center gap-3 px-3 py-2 text-slate-400 hover:text-white transition-colors text-xs font-medium"
+             >
+                <Info size={16} />
+                Support
+             </button>
+             <button 
+                onClick={() => onNavigate('/dashboard/settings')}
+                className="flex items-center gap-3 px-3 py-2 text-slate-400 hover:text-white transition-colors text-xs font-medium"
+             >
+                <Settings size={16} />
+                Settings
+             </button>
           </div>
+
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-3 py-3 w-full rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-400/5 transition-all text-xs font-bold uppercase tracking-wider"
+          >
+            <LogOut size={16} />
+            Sign Out
+          </button>
         </div>
       </div>
     </div>
