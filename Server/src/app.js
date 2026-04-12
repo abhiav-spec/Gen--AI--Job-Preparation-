@@ -32,7 +32,13 @@ const allowedOrigins = [
     'http://localhost:5173',
     'http://127.0.0.1:5174',
     'http://localhost:5174',
+    'http://43.205.126.119',
+    'http://43.205.126.119:80',
 ].filter(Boolean);
+
+if (!config.JWT_SECRET) {
+    console.error('CRITICAL: JWT_SECRET is missing from environment variables!');
+}
 
 const corsOptions = {
     origin: (origin, callback) => {
@@ -55,8 +61,10 @@ app.use(
                 imgSrc: ["'self'", 'data:', 'https://ui-avatars.com'],
                 connectSrc: ["'self'", 'https://cdn.jsdelivr.net'],
                 mediaSrc: ["'self'", 'blob:'],
+                upgradeInsecureRequests: null,
             },
         },
+        hsts: false,
     })
 );
 

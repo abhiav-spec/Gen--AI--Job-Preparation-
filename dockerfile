@@ -1,4 +1,4 @@
-FROM node:20-alpine as Frontend-builder
+FROM node:20-alpine AS frontend-builder
 
 COPY client /app
 
@@ -31,7 +31,7 @@ WORKDIR /app
 
 RUN npm install
 
-COPY --from=Frontend-builder /app/dist /app/public
+COPY --from=frontend-builder /app/dist /app/public
 
 
 CMD ["npm", "start"]
