@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { getAccessToken, refreshAccessToken, setAccessToken } from './auth.api';
 
-const BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api') + '/interview';
+const BASE_URL = `${import.meta.env.VITE_API_URL || '/api'}/interview`;
 
 const api = axios.create({
   baseURL: BASE_URL,

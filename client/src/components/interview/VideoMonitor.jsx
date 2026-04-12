@@ -32,6 +32,8 @@ const VideoMonitor = ({
     const faceMissingTimer = useRef(null);
     const cameraOffTimer = useRef(null);
     const [faceMissingTime, setFaceMissingTime] = useState(0); // in format of seconds
+    const visionReadySinceRef = useRef(null);
+    const faceDetectedOnceRef = useRef(false);
 
     // 1. Initialize models
     useEffect(() => {
@@ -127,6 +129,29 @@ const VideoMonitor = ({
         const interval = setInterval(async () => {
             if (!isInterviewing) {
                 setFaceMissingTime(0);
+                visionReadySinceRef.current = null;
+                faceDetectedOnceRef.current = false;
+                return;
+            }
+
+            const videoReady = videoRef.current && videoRef.current.readyState >= 2;
+            const visionReady = modelsLoaded && permissionStatus === 'granted' && !!stream && videoReady;
+
+            if (visionReady && !visionReadySinceRef.current) {
+                visionReadySinceRef.current = Date.now();
+            }
+
+            const warmupElapsed = visionReadySinceRef.current
+                ? Date.now() - visionReadySinceRef.current
+                : 0;
+            const policyArmed = warmupElapsed >= 15000 || faceDetectedOnceRef.current;
+
+            // Do not enforce face-missing policy until the camera and models are fully ready.
+            if (!visionReady || !policyArmed) {
+                setFaceMissingTime(0);
+                setDetection(null);
+                setConfidenceScore(0);
+                if (onStatusUpdate) onStatusUpdate({ faceDetected: true, emotion: 'pending', confidenceScore: 0 });
                 return;
             }
 
@@ -139,6 +164,7 @@ const VideoMonitor = ({
                     const score = calculateConfidence(result);
                     setConfidenceScore(score);
                     setFaceMissingTime(0);
+                    faceDetectedOnceRef.current = true;
 
                     // emotion tracker
                     const expressions = result.expressions;
@@ -163,7 +189,7 @@ const VideoMonitor = ({
         }, 500);
 
         return () => clearInterval(interval);
-    }, [modelsLoaded, stream, isActive, isInterviewing, onStatusUpdate]);
+    }, [modelsLoaded, permissionStatus, stream, isActive, isInterviewing, onStatusUpdate]);
 
     // 4. Rule checking
     useEffect(() => {
@@ -175,7 +201,7 @@ const VideoMonitor = ({
             }
         }
         
-        if (faceMissingTime > 10 && isInterviewing && onAutoEnd) {
+           if (faceMissingTime > 20 && isInterviewing && onAutoEnd) {
              onAutoEnd("Disconnected from user due to face missing policy violations.");
         }
     }, [faceMissingTime, isInterviewing]);

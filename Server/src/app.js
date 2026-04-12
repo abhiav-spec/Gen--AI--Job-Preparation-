@@ -26,6 +26,8 @@ const allowedOrigins = [
     ...(config.CORS_ORIGINS || []),
     `http://localhost:${config.PORT}`,
     `http://127.0.0.1:${config.PORT}`,
+    'http://localhost:4000',
+    'http://127.0.0.1:4000',
     'http://127.0.0.1:5173',
     'http://localhost:5173',
     'http://127.0.0.1:5174',
@@ -45,12 +47,22 @@ const corsOptions = {
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 };
 
+app.use(
+    helmet({
+        contentSecurityPolicy: {
+            directives: {
+                defaultSrc: ["'self'"],
+                imgSrc: ["'self'", 'data:', 'https://ui-avatars.com'],
+                connectSrc: ["'self'", 'https://cdn.jsdelivr.net'],
+                mediaSrc: ["'self'", 'blob:'],
+            },
+        },
+    })
+);
 
 app.use(express.static(publicDir));
 app.use(cors(corsOptions));
 app.options(/.*/, cors(corsOptions));
-
-app.use(helmet());
 app.use(cookieParser());
 app.use(express.json({ limit: '1mb' }));
 app.use(morgan(config.NODE_ENV === 'production' ? 'combined' : 'dev'));

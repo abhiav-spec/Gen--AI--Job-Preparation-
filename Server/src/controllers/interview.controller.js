@@ -1,4 +1,4 @@
-import { PDFParse as pdfparse } from 'pdf-parse';
+import { PDFParse } from 'pdf-parse';
 import { generateInterviewReport, generateResumePdf, generatePdfFromHtml } from '../services/ai.service.js';
 import interiviewReportModel from '../models/interviewReport.model.js';
 import { createNotification } from './notification.controller.js';
@@ -81,8 +81,9 @@ async function interviewcontroller(req, res) {
         return res.status(400).json({ error: 'No resume file provided. Please upload a PDF file.' });
     }
     try {
-        const parser = new pdfparse({ data: resumeFile.buffer });
+        const parser = new PDFParse({ data: resumeFile.buffer });
         const result = await parser.getText();
+        await parser.destroy();
         resumeText = result.text?.trim() || '';
         if (!resumeText || resumeText.length < 10) {
             return res.status(400).json({ error: 'Resume PDF appears to be empty or unreadable. Please upload a valid resume PDF with text.' });
