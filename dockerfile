@@ -33,5 +33,4 @@ RUN npm install
 
 COPY --from=frontend-builder /app/dist /app/public
 
-
 CMD ["npm", "start"]

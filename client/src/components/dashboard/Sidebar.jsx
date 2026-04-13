@@ -24,7 +24,7 @@ const SidebarContent = ({ onNavigate, user, handleLogout, setShowAbout }) => {
   const navItems = [
     { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/dashboard', exact: true },
     { icon: <Briefcase size={20} />, label: 'Analyse', path: '/dashboard/report-generator', exact: true },
-    { icon: <Bot size={20} />, label: 'Mock Interview', path: '/dashboard/mock-interview', exact: false },
+    { icon: <Bot size={20} />, label: 'Mock Interview', path: '/dashboard/mock-interview/setup', exact: false },
     { icon: <FileText size={20} />, label: 'Reports', path: '/dashboard/view-report', exact: true },
   ];
 
