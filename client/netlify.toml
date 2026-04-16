@@ -1,0 +1,24 @@
+# Netlify Configuration File
+
+[build]
+  # The directory to run the build command in
+  base = "client"
+  # The command to build your site
+  command = "npm run build"
+  # The directory that contains the deploy-ready HTML files and assets
+  publish = "dist"
+
+# Proxy /api requests to the EC2 Backend
+# This solves the "Mixed Content" (HTTPS vs HTTP) issue for free
+[[redirects]]
+  from = "/api/*"
+  to = "http://15.206.166.175:5000/api/:splat"
+  status = 200
+  force = true
+
+# Handle SPA Routing: Redirect all other requests to index.html
+# This ensures React Router works on page refresh
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
