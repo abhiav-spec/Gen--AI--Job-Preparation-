@@ -10,7 +10,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI;
-const port = Number(process.env.PORT || 3000);
+const port = Number(process.env.PORT || 5000);
 const jwtSecret = process.env.JWT_SECRET;
 const groqApiKey = process.env.GROQ_API_KEY;
 const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
