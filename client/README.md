@@ -26,19 +26,29 @@ This is the frontend for the **Gen-AI Job Preparation** platform, a premium AI-d
 ## 📂 Project Structure
 
 ```text
-src/
-├── api/          # Axios API service definitions
-├── assets/       # Static assets and images
-├── components/   # Reusable UI components
-│   ├── dashboard/  # Dashboard-specific components
-│   ├── interview/  # Vision and interview logic components
-│   └── ui/         # Base UI elements (buttons, inputs, etc.)
-├── context/      # React Context providers for global state
-├── hooks/        # Custom React hooks (e.g., useSpeech, useAuth)
-├── pages/        # Main application pages
-├── routes/       # Routing configuration
-└── utils/        # Helper functions and constants
+client/
+├── public/               # Public static assets
+├── src/
+│   ├── api/              # API services for backend communication
+│   │   ├── auth.api.js       # Login, Register, Verification
+│   │   ├── interview.api.js  # Report generation & analysis
+│   │   └── mockInterview.api.js # Mock session management
+│   ├── components/       # Component-based architecture
+│   │   ├── dashboard/    # Sidebar, Stats, Report cards
+│   │   ├── interview/    # VideoMonitor (Face-API integration)
+│   │   └── ui/           # Shared UI (Buttons, Inputs, Loaders)
+│   ├── context/          # React context for global state
+│   ├── hooks/            # Custom hooks (e.g., useSpeech for AI Voice)
+│   ├── pages/            # Core views and page layouts
+│   ├── routes/           # React Router navigation logic
+│   ├── utils/            # Helper functions and AI vision utilities
+│   ├── App.jsx           # Main application entry point
+│   ├── index.css         # Global styles & Tailwind directives
+│   └── main.jsx          # React DOM initialization
+├── tailwind.config.js    # Tailwind CSS configuration
+└── vite.config.js        # Vite build configuration
 ```
+
 
 ## 🏁 Getting Started
 
