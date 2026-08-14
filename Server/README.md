@@ -13,6 +13,26 @@ The server is built on a modern MERN stack architecture (Node.js/Express/MongoDB
 - **App Engine (`src/app.js`)**: Configures middleware (CORS, Morgan, `cookie-parser`) and maps top-level routes to their respectve handlers.
 - **Environment Gateway (`src/config/config.js`)**: Validates and loads all critical secrets (MONGODB_URI, JWT_SECRET, AI keys, Email credentials).
 
+### 📂 Folder Structure
+```text
+Server/
+├── public/                # Static assets and built frontend
+│   ├── assets/            # Compiled CSS/JS assets
+│   └── index.html         # Entry HTML
+├── src/
+│   ├── config/            # Environment and Database configuration
+│   ├── controllers/       # Logic for handling API requests
+│   ├── middleware/        # Auth & File processing middleware
+│   ├── models/            # Mongoose models (MongoDB Schemas)
+│   ├── routes/            # API endpoint definitions
+│   ├── services/          # Core business logic (AI, Email, etc.)
+│   ├── utils/             # Reusable helper functions
+│   └── app.js             # Express app & middleware configuration
+├── server.js              # Server entry point
+├── Dockerfile             # Docker container configuration
+└── package.json           # Project dependencies & scripts
+```
+
 ---
 
 ## 📡 API Reference & Functionality
